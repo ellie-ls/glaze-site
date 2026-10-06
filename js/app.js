@@ -147,7 +147,7 @@ function colorFamilies(g) {
 }
 
 const state = {
-  sort: "newest",
+  sort: "code", // the studio finds glazes by code (Mayco SC-1, SC-2, ...)
   filters: Object.fromEntries([...Object.keys(FILTERS), "color"].map((k) => [k, new Set()])),
   query: "",
   favoritesOnly: false,
@@ -205,7 +205,7 @@ function visibleGlazes() {
     return true;
   });
   if (state.sort === "favorited") list.sort((a, b) => favoriteCount(b) - favoriteCount(a));
-  else if (state.sort === "az") list.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+  else if (state.sort === "code") list.sort(byCode);
   else if (state.sort === "color") list.sort((a, b) => rainbowKey(a) - rainbowKey(b) || a.name.localeCompare(b.name));
   else list.sort((a, b) => String(b.added).localeCompare(String(a.added)));
   return list;
@@ -250,6 +250,14 @@ function averageColor(src) {
     img.onerror = () => resolve("");
     img.src = src;
   });
+}
+
+// Code order the way people read codes: SC-2 before SC-14 before SC-105, and each
+// prefix (SC, SW, MBG...) grouped together. Glazes without a code go last, by name.
+function byCode(a, b) {
+  if (!a.code !== !b.code) return a.code ? -1 : 1;
+  return (a.code || "").localeCompare(b.code || "", undefined, { numeric: true, sensitivity: "base" }) ||
+    a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
 }
 
 // ---------- Glaze tile artwork ----------
@@ -868,9 +876,9 @@ async function saveUpload() {
     return;
   }
   glazes.push(saved);
-  state.sort = "newest";
-  syncSortPanel();
   openDetail(saved.id); // shows the new glaze and slides it into the grid
+  // Bring its tile into view wherever the current sort put it
+  setTimeout(() => cards.get(saved.id)?.scrollIntoView({ behavior: reduceMotion.matches ? "auto" : "smooth", block: "nearest" }), 500);
 }
 
 // ---------- Password check + delete ----------

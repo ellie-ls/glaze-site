@@ -115,13 +115,15 @@ const GlazeStore = (function () {
 
   const SETUP_MSG = "Run supabase/migrations/20261009b_remove_any_option.sql in Supabase first.";
   const missingTable = (e) => e && (e.code === "42P01" || e.code === "PGRST205");
+  // Postgres says 42703; Supabase's API says PGRST204 ("Could not find the 'removed' column")
+  const missingColumn = (e) => e && (e.code === "42703" || e.code === "PGRST204");
   const escapeLike = (text) => text.replace(/[\\%_]/g, "\\$&");
 
   // Returns { options: [{ category, label, removed }] }, or { error, needsSetup } when the table isn't there yet
   async function loadOptions() {
     if (typeof db === "undefined") return { error: "Can’t reach Supabase." };
     let { data, error } = await db.from("glaze_options").select("category, label, removed").order("created_at");
-    if (error && error.code === "42703") { // the "removed" column isn't there yet
+    if (missingColumn(error)) { // the "removed" column isn't there yet
       ({ data, error } = await db.from("glaze_options").select("category, label").order("created_at"));
     }
     if (error) return { error: error.message, needsSetup: missingTable(error) };
@@ -146,13 +148,19 @@ const GlazeStore = (function () {
       e.needsSetup = missingTable(error);
       throw e;
     }
-    const result = row
+    let result = row
       ? await db.from("glaze_options").update({ removed }).eq("id", row.id).select("id")
       : await db.from("glaze_options").insert({ category, label, removed }).select("id");
-    if (result.error) {
-      if (result.error.code === "42703") throw new Error("Removing options needs one more setup step. " + SETUP_MSG);
-      throw new Error("Couldn’t save that change: " + result.error.message);
+
+    // Before the fourth setup file there's no "removed" column. Choices people added can still be
+    // removed (by deleting their row) and brought back (by adding it again); built-in ones can't.
+    if (result.error && missingColumn(result.error)) {
+      if (removed && row) result = await db.from("glaze_options").delete().eq("id", row.id).select("id");
+      else if (!removed && !row) result = await db.from("glaze_options").insert({ category, label }).select("id");
+      else if (!removed && row) return; // already listed
+      else throw new Error("Removing built-in options needs one more setup step. " + SETUP_MSG);
     }
+    if (result.error) throw new Error("Couldn’t save that change: " + result.error.message);
     if (!result.data.length) throw new Error("The database didn’t allow that change. " + SETUP_MSG);
   }
 

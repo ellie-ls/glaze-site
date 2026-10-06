@@ -695,6 +695,12 @@ button.tag:hover, .tag.removable:hover { background: var(--green); }
   .opts.two { column-gap: 10px; }
 }
 
+/* iPhones zoom the page into any field whose text is under 16px, so touch screens get 16px text */
+@media (pointer: coarse) {
+  input, textarea, select { font-size: 16px !important; }
+  .field input, .tag-input, .select-add-input { height: 32px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; }
 }
