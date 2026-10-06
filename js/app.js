@@ -31,6 +31,121 @@ const COLORS = [
   ["multi", "conic-gradient(#e2665a, #f2d36b, #98c47b, #5fbcc0, #6aa0e0, #a184cf, #e2665a)"],
 ];
 
+// Words in a glaze's name or tags that place it in a color group (for the Color filter and sort).
+// Common variations ("blues", "greenish", "reddish", "creamy") are matched automatically below.
+const COLOR_WORDS = {
+  red: ["red", "crimson", "cherry", "ruby", "scarlet", "firebrick", "brick", "oxblood", "cranberry", "burgundy",
+    "maroon", "merlot", "wine", "claret", "rouge", "cardinal", "garnet", "poppy", "tomato", "vermilion", "vermillion",
+    "carmine", "cinnabar", "lipstick", "strawberry", "chili", "chilli", "paprika", "ember", "embers"],
+  orange: ["orange", "tangerine", "pumpkin", "rust", "apricot", "persimmon", "marigold", "peach", "papaya", "mango",
+    "clementine", "mandarin", "nectarine", "cantaloupe", "carrot", "terracotta", "cotta", "sunset", "flame", "ginger",
+    "copper", "coppery", "kumquat", "tiger", "fox", "amberglow"],
+  yellow: ["yellow", "lemon", "butter", "buttercup", "honey", "gold", "golden", "mustard", "amber", "canary", "sunflower",
+    "sunshine", "sunny", "daffodil", "dandelion", "goldenrod", "ochre", "ocher", "citron", "citrine", "citrus", "banana",
+    "maize", "corn", "saffron", "straw", "flax", "lemonade", "custard", "chamomile", "pineapple", "yolk"],
+  green: ["green", "celadon", "sage", "seaweed", "olive", "moss", "mossy", "jade", "emerald", "lime", "forest", "mint",
+    "chartreuse", "leaf", "leafy", "fern", "pine", "pistachio", "avocado", "basil", "kelly", "shamrock", "clover",
+    "juniper", "eucalyptus", "malachite", "verdigris", "viridian", "veridian", "oribe", "grass", "matcha", "pea",
+    "lichen", "cactus", "kiwi", "spring", "meadow", "evergreen", "spruce", "herb", "thyme", "cucumber", "artichoke",
+    "asparagus", "frog", "lizard", "gecko", "willow", "ivy", "algae", "seagreen", "jadeite"],
+  teal: ["teal", "turquoise", "turquise", "turqoise", "torquoise", "aqua", "aquamarine", "cyan", "seafoam", "lagoon",
+    "peacock", "seaglass", "robin", "robins", "tiffany", "patina", "caribbean", "mermaid", "lagoon", "pool", "spa",
+    "bluegreen", "glacier"],
+  blue: ["blue", "cobalt", "sapphire", "navy", "azure", "denim", "indigo", "sky", "cerulean", "ocean", "royal",
+    "cornflower", "periwinkle", "lapis", "lazuli", "lazurite", "azurite", "delft", "ultramarine", "prussian", "bluebell",
+    "bluebird", "blueberry", "celeste", "marine", "nautical", "hydrangea", "ice", "icy",
+    "atlantic", "pacific", "harbor", "harbour", "admiral", "midnight"],
+  purple: ["purple", "plum", "lavender", "violet", "lilac", "amethyst", "grape", "eggplant", "orchid", "mauve",
+    "mulberry", "wisteria", "iris", "heather", "aubergine", "thistle", "boysenberry", "blackberry", "raisin", "byzantium",
+    "lupine", "elderberry", "fig", "sangria", "prune", "ube", "taro"],
+  pink: ["pink", "rose", "rosy", "blush", "coral", "fuchsia", "magenta", "peony", "salmon", "flamingo", "bubblegum",
+    "raspberry", "watermelon", "petal", "blossom", "carnation", "hibiscus", "candyfloss", "ballet", "punch", "guava", "grapefruit", "sakura", "azalea", "begonia", "dragonfruit"],
+  brown: ["brown", "chocolate", "coffee", "espresso", "walnut", "tenmoku", "temmoku", "cinnamon", "bronze", "iron",
+    "mocha", "caramel", "toffee", "chestnut", "hazelnut", "pecan", "umber", "sienna", "sepia", "cocoa", "mahogany",
+    "cedar", "acorn", "bark", "leather", "saddle", "tobacco", "teak", "oak", "java", "molasses", "tortoise",
+    "tortoiseshell", "nutmeg", "truffle", "fudge", "brownie", "bean", "earth", "earthy", "soil",
+    "mud", "russet", "auburn", "cognac", "whiskey", "bourbon", "maple", "root", "kombucha", "hickory"],
+  beige: ["beige", "oatmeal", "oat", "sand", "sandy", "sandstone", "cream", "creamy", "tan", "wheat", "buff",
+    "latte", "parchment", "khaki", "fawn", "biscuit", "bisque", "linen", "ecru", "champagne", "vanilla", "almond",
+    "taupe", "oyster", "bone", "desert", "dune", "dunes", "putty", "mushroom", "nude", "camel", "honeycomb",
+    "cashew", "macadamia", "toast", "chai", "porridge", "flaxseed", "burlap", "jute", "sesame"],
+  white: ["white", "alabaster", "snow", "snowy", "snowflake", "porcelain", "ivory", "chalk", "chalky", "milk", "milky",
+    "pearl", "pearly", "cloud", "cloudy", "frost", "frosty", "coconut", "marshmallow", "lace", "eggshell", "blanc",
+    "blanco", "salt", "cotton", "ghost", "winter", "polar", "arctic", "swan", "magnolia", "gardenia", "jasmine",
+    "meringue", "sugar", "powder"],
+  grey: ["grey", "gray", "ash", "ashy", "slate", "silver", "silvery", "pewter", "stone", "smoke", "smokey", "smoky",
+    "graphite", "steel", "storm", "stormy", "fog", "foggy", "concrete", "cement", "pebble", "gunmetal", "nickel",
+    "platinum", "shadow", "flint", "granite", "dove", "mouse", "elephant", "pigeon", "zinc", "cinder",
+    "haze", "hazy", "moon", "lunar", "moonstone", "driftwood"],
+  black: ["black", "obsidian", "onyx", "jet", "ebony", "charcoal", "coal", "raven", "ink", "inky", "noir", "licorice",
+    "liquorice", "tuxedo", "caviar", "soot", "tar", "basalt", "night", "nightfall", "pitch", "crow", "panther", "oilspot"],
+  multi: ["rainbow", "galaxy", "multicolor", "multicolored", "multicolour", "multi", "variegated", "confetti", "aurora",
+    "nebula", "prism", "prismatic", "kaleidoscope", "opal", "opalescent", "iridescent", "cosmos", "cosmic", "unicorn",
+    "harlequin", "carnival", "tropical", "fiesta", "mosaic", "tiedye", "psychedelic", "chameleon", "northern"],
+};
+
+// Every way a color word might be written: "blue" also covers "blues", "bluish", "blueish"; "red" covers
+// "reds", "reddish"; "cream" covers "creams", "creamy"; and so on.
+const COLOR_LOOKUP = (() => {
+  const lookup = new Map();
+  const add = (word, family) => {
+    if (!lookup.has(word)) lookup.set(word, new Set());
+    lookup.get(word).add(family);
+  };
+  for (const [family, words] of Object.entries(COLOR_WORDS)) {
+    for (const w of words) {
+      const stem = w.endsWith("e") ? w.slice(0, -1) : w; // blue -> blu(ish), purple -> purpl(ish)
+      const last = w[w.length - 1];
+      const doubled = /[^aeiou][aeiou][bdgmnprt]$/.test(w) ? w + last : w; // red -> redd(ish), tan -> tann(ish)
+      [w, w + "s", w + "es", w + "ish", stem + "ish", doubled + "ish", w + "y", stem + "y", doubled + "y", w + "ey",
+       w + "ness"].forEach((form) => add(form, family));
+    }
+  }
+  return lookup;
+})();
+
+// Color groups named in some text, e.g. "Tic-Tac-Turquoise" -> ["teal"], "Smoky Blues" -> ["grey", "blue"]
+function colorsInText(text) {
+  const found = new Set();
+  const words = String(text || "").toLowerCase().replace(/[’']s\b/g, "s").split(/[^a-z]+/).filter(Boolean);
+  // also try two words joined, so "blue green" and "sea foam" are caught like "bluegreen" and "seafoam"
+  const pairs = words.slice(1).map((w, i) => words[i] + w);
+  for (const w of [...words, ...pairs]) (COLOR_LOOKUP.get(w) || []).forEach((family) => found.add(family));
+  return Object.keys(COLOR_WORDS).filter((family) => found.has(family)); // in rainbow order
+}
+
+// Nearest color group for a color like "#3fa7a0", used for photos people upload
+function familyFromHex(hex) {
+  if (!/^#[0-9a-f]{6}$/i.test(hex || "")) return "";
+  const n = parseInt(hex.slice(1), 16);
+  const r = (n >> 16) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, d = max - min;
+  const sat = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
+  let h = d === 0 ? 0 : max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  h = (h * 60 + 360) % 360;
+  if (sat < 0.15 || d < 0.06) return l > 0.85 ? "white" : l < 0.18 ? "black" : "grey";
+  if (h >= 20 && h < 60 && sat < 0.45 && l > 0.6) return "beige";
+  if (h < 45 && l < 0.38) return "brown";
+  if (h < 15 || h >= 345) return "red";
+  if (h < 40) return "orange";
+  if (h < 68) return "yellow";
+  if (h < 160) return "green";
+  if (h < 195) return "teal";
+  if (h < 255) return "blue";
+  if (h < 295) return "purple";
+  return "pink";
+}
+
+// A glaze's color groups: the ones chosen in its form, otherwise its name and tags,
+// otherwise its photo's average color
+function colorFamilies(g) {
+  if (g.colorFamily) return g.colorFamily.split(",").map((c) => c.trim()).filter(Boolean);
+  const named = colorsInText([g.name, ...(g.tags || [])].join(" "));
+  if (named.length) return named;
+  const fromPhoto = familyFromHex(g.sortColor);
+  return fromPhoto ? [fromPhoto] : [];
+}
+
 const state = {
   sort: "newest",
   filters: Object.fromEntries([...Object.keys(FILTERS), "color"].map((k) => [k, new Set()])),
@@ -44,22 +159,29 @@ const state = {
 // ---------- Matching ----------
 
 function matchesFilter(g, key, option) {
-  const has = (field) => (g[field] || "").toLowerCase().includes(option.toLowerCase());
+  // A filter matches the glaze's own field, or a tag that says the same thing
+  const tags = (g.tags || []).join(" | ");
+  const word = new RegExp("(^|[^a-z-])" + option.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "($|[^a-z])");
+  const has = (field, alsoName = false) =>
+    word.test([g[field] || "", tags, alsoName ? g.name : ""].join(" | ").toLowerCase());
   switch (key) {
     case "application": return has("application");
     case "opacity": return has("opacity");
-    case "brand": return g.brand === option;
-    case "color": return g.colorFamily === option;
+    case "brand": return has("brand", true);
+    case "color": return colorFamilies(g).includes(option);
     case "foodSafe": {
       const v = (g.foodSafe || "").toLowerCase();
-      return option === "Food Safe" ? v.startsWith("yes") : v.startsWith("no");
+      const not = v.startsWith("no") || /not (food|dinnerware)[- ]safe/.test(v);
+      if (option === "Food Safe") return !not && (v.startsWith("yes") || /(food|dinnerware)[- ]safe/.test(v));
+      if (option === "Not Food Safe") return not;
+      return has("foodSafe");
     }
-    case "finish":
-      return has("finish") || (g.tags || []).some((t) => t.toLowerCase() === option.toLowerCase());
+    case "finish": return has("finish", true);
     case "firing": {
-      const cones = GlazeParse.cones(g.firingRange);
-      if (option === "Low Fire") return cones.some((c) => GlazeParse.band(c) === "low") || /low\s?fire/i.test(g.firingRange);
-      if (option === "Mid Fire") return cones.some((c) => GlazeParse.band(c) === "mid") || /mid\s?fire/i.test(g.firingRange);
+      const firing = [g.firingRange, tags].join(" | ");
+      const cones = GlazeParse.cones(firing);
+      if (option === "Low Fire") return cones.some((c) => GlazeParse.band(c) === "low") || /low\s?fire/i.test(firing);
+      if (option === "Mid Fire") return cones.some((c) => GlazeParse.band(c) === "mid") || /mid\s?fire/i.test(firing);
       const wanted = option.replace("Cone ", "");
       // "Cone 4-6" covers cone 5 too
       const nums = cones.filter((c) => !c.startsWith("0")).map(Number);
@@ -92,7 +214,8 @@ function visibleGlazes() {
 // Rainbow order: red, orange, yellow, green, teal, blue, purple, pink,
 // then the neutrals from white to black, then glazes with no known color.
 function rainbowKey(g) {
-  const hex = g.sortColor || g.color;
+  const swatch = (COLORS.find(([name]) => name === colorFamilies(g)[0]) || [])[1];
+  const hex = g.sortColor || g.color || (swatch && swatch.startsWith("#") ? swatch : "");
   if (!hex) return 3000;
   const n = parseInt(hex.slice(1), 16);
   const r = (n >> 16) / 255, gr = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
@@ -113,7 +236,12 @@ function averageColor(src) {
       c.width = c.height = 24;
       const ctx = c.getContext("2d");
       ctx.drawImage(img, 0, 0, 24, 24);
-      const px = ctx.getImageData(4, 4, 16, 16).data; // skip the edges, usually background
+      let px;
+      try {
+        px = ctx.getImageData(4, 4, 16, 16).data; // skip the edges, usually background
+      } catch {
+        return resolve(""); // photos from other sites can be shown but not measured
+      }
       let r = 0, g = 0, b = 0;
       for (let i = 0; i < px.length; i += 4) { r += px[i]; g += px[i + 1]; b += px[i + 2]; }
       const k = px.length / 4;
@@ -339,9 +467,10 @@ function syncSortPanel() {
     $$(".opt", box).forEach((b) => b.setAttribute("aria-pressed", String(chosen.has(b.dataset.value))));
   });
   const count = Object.values(state.filters).reduce((n, s) => n + s.size, 0);
-  const clear = $("#clearFilters");
-  clear.hidden = count === 0;
-  clear.textContent = `Clear (${count})`;
+  $$("[data-clear]").forEach((clear) => {
+    clear.hidden = count === 0;
+    clear.textContent = `Clear (${count})`;
+  });
 }
 
 sortEl.addEventListener("click", (e) => {
@@ -369,10 +498,16 @@ $("#resetAll").addEventListener("click", () => {
   updateGrid();
 });
 
-$("#clearFilters").addEventListener("click", () => {
+$$("[data-clear]").forEach((b) => b.addEventListener("click", () => {
   Object.values(state.filters).forEach((set) => set.clear());
   syncSortPanel();
   updateGrid();
+}));
+
+// Phones: "Sort By" folds the panel open and shut
+$("#sortToggle").addEventListener("click", (e) => {
+  const open = sortEl.classList.toggle("is-open");
+  e.currentTarget.setAttribute("aria-expanded", String(open));
 });
 
 // ---------- Search + favorites filter ----------
@@ -436,12 +571,12 @@ function syncActions() {
 
 const ATTRS = [
   ["Firing Range", "firingRange"], ["Application", "application"], ["Finish", "finish"],
-  ["Opacity", "opacity"], ["Food Safe", "foodSafe"], ["Fluidity", "fluidity"],
+  ["Opacity", "opacity"], ["Food Safe", "foodSafe"],
 ];
 
-// Signed-in people can change the sample glazes and anything they added themselves
-function canEdit(g) {
-  return !!state.user && (!g.addedBy || g.addedBy === state.user.id);
+// Anyone logged in can edit or delete a glaze (after entering the studio password)
+function canEdit() {
+  return !!state.user;
 }
 
 function openDetail(id, { force = false } = {}) {
@@ -463,14 +598,15 @@ function openDetail(id, { force = false } = {}) {
     $("[data-attrs]", view).innerHTML = ATTRS.map(([label, key]) => {
       const v = g[key];
       return `<dt>${label}:</dt><dd><span class="chip${v ? "" : " empty-val"}">${v ? escapeHtml(v) : "Unknown"}</span></dd>`;
-    }).join("");
+    }).join("") +
+      `<dt>Notes:</dt><dd class="notes${g.notes ? "" : " is-blank"}">${g.notes ? escapeHtml(g.notes) : "No notes yet"}</dd>`;
 
     // Clicking a tag searches for it
     $("[data-tags]", view).innerHTML = (g.tags || [])
       .map((t) => `<button class="tag" data-tag="${escapeHtml(t)}" title="Search “${escapeHtml(t)}”">${escapeHtml(t)}</button>`)
       .join("");
 
-    const editable = canEdit(g);
+    const editable = canEdit();
     $("[data-edit]", view).hidden = !editable;
     $("[data-delete]", view).hidden = !editable;
     $("[data-edit]", view).addEventListener("click", async () => {
@@ -510,7 +646,7 @@ panelEl.addEventListener("click", (e) => {
 
 // ---------- Upload panel ----------
 
-const INFO_FIELDS = ["code", "firingRange", "application", "finish", "opacity", "foodSafe", "fluidity"];
+const INFO_FIELDS = ["code", "firingRange", "application", "finish", "opacity", "foodSafe", "notes"];
 let upload = null; // what the person has entered so far
 
 $("#uploadBtn").addEventListener("click", () => openUpload());
@@ -520,11 +656,17 @@ function openUpload(editId) {
   if (!state.user) return openLogin(editId ? "Log in to edit glazes." : "Log in to upload a glaze.");
   const g = editId ? glazes.find((x) => x.id === editId) : null;
   state.selectedId = null;
-  upload = { editId: g ? g.id : null, photo: g ? g.photo : "", tags: g ? [...(g.tags || [])] : [], brand: g ? g.brand : "" };
+  upload = {
+    editId: g ? g.id : null, photo: g ? g.photo : "", tags: g ? [...(g.tags || [])] : [], brand: g ? g.brand : "",
+    colors: new Set(g ? colorFamilies(g) : []),
+    colorsChosen: !!(g && g.colorFamily), // once someone clicks a color, stop guessing
+  };
   showPanel("upload", () => {
     const view = $("#uploadTemplate").content.cloneNode(true);
     wireUpload(view);
     if (g) fillForm(view, g);
+    else normalizeSelects(view);
+    $("#formSwatches", view).innerHTML = formSwatchButtons();
     return view;
   });
   setTimeout(() => $("#f-name")?.focus({ preventScroll: true }), 350);
@@ -533,6 +675,7 @@ function openUpload(editId) {
 function fillForm(view, g) {
   $("#f-name", view).value = g.name;
   for (const key of INFO_FIELDS) $("#f-" + key, view).value = g[key] || "";
+  normalizeSelects(view);
   $("#saveBtn", view).firstChild.textContent = "Save changes ";
   $("#uploadTags", view).innerHTML = tagChips();
   const square = $("#dropSquare", view);
@@ -554,8 +697,9 @@ function wireUpload(view) {
   const usePhoto = (file) => {
     if (!file || !file.type.startsWith("image/")) return;
     upload.file = file;
+    upload.webPhoto = false;
     upload.photo = URL.createObjectURL(file);
-    averageColor(upload.photo).then((hex) => { if (upload) upload.sortColor = hex; });
+    averageColor(upload.photo).then((hex) => { if (upload) { upload.sortColor = hex; suggestColors(); } });
     preview.src = upload.photo;
     $("#dropSquare", zone).style.background = "";
     preview.hidden = false;
@@ -603,7 +747,7 @@ function wireUpload(view) {
   });
 
   $("#uploadForm", view).addEventListener("submit", (e) => { e.preventDefault(); saveUpload(); });
-  $("#f-name", view).addEventListener("input", (e) => e.target.classList.remove("invalid"));
+  $("#f-name", view).addEventListener("input", (e) => { e.target.classList.remove("invalid"); suggestColors(); });
 
   wireNameSearch(view);
 }
@@ -628,7 +772,39 @@ function commitTag() {
 
 function renderUploadTags() {
   $("#uploadTags").innerHTML = tagChips();
+  suggestColors();
 }
+
+// ---- Color groups in the form ----
+// Picked from the name and tags as you type (and from an uploaded photo's color),
+// until you click a swatch yourself.
+function suggestColors() {
+  if (!upload || upload.colorsChosen || !$("#formSwatches")) return;
+  let found = colorsInText([$("#f-name").value, ...upload.tags].join(" "));
+  if (!found.length && upload.file) found = [familyFromHex(upload.sortColor)].filter(Boolean);
+  upload.colors = new Set(found);
+  renderFormSwatches();
+}
+
+function formSwatchButtons() {
+  return COLORS.map(([name, bg]) =>
+    `<button type="button" class="swatch" data-form-color="${name}" aria-pressed="${upload.colors.has(name)}" title="${name}" style="background:${bg}"></button>`
+  ).join("");
+}
+
+function renderFormSwatches() {
+  const box = $("#formSwatches");
+  if (box) box.innerHTML = formSwatchButtons();
+}
+
+panelEl.addEventListener("click", (e) => {
+  const sw = e.target.closest("[data-form-color]");
+  if (!sw || !upload) return;
+  const name = sw.dataset.formColor;
+  upload.colors.has(name) ? upload.colors.delete(name) : upload.colors.add(name);
+  upload.colorsChosen = true;
+  renderFormSwatches();
+});
 
 panelEl.addEventListener("click", (e) => {
   const rm = e.target.closest("[data-remove]");
@@ -655,7 +831,12 @@ async function saveUpload() {
   g.brand = upload.brand;
   g.tags = [...upload.tags];
   for (const key of INFO_FIELDS) g[key] = $("#f-" + key).value.trim();
+  g.colorFamily = [...upload.colors].join(",");
   if (upload.file) g.sortColor = upload.sortColor || "";
+  else if (upload.webPhoto) {
+    g.photo = upload.photo; // the manufacturer's photo, linked from their site
+    g.sortColor = "";
+  }
 
   const saveBtn = $("#saveBtn");
   const label = saveBtn.firstChild.textContent;
@@ -696,6 +877,8 @@ async function saveUpload() {
 
 const authDialog = $("#authDialog");
 const authInput = $("#f-confirm-password");
+// Browsers that can't draw a text box as dots get a normal password box instead
+if (!CSS.supports("-webkit-text-security", "disc") && !CSS.supports("text-security", "disc")) authInput.type = "password";
 let authDone = null; // resolves the open askPassword() call
 
 // Asks for the studio password. Resolves true once it matches.
@@ -832,6 +1015,245 @@ $("#toastUndo").addEventListener("click", () => {
   if (undo) undo();
 });
 
+// ---------- Dropdowns in the upload form ----------
+// Application, Firing Range, Finish, Opacity and Food Safe are dropdowns with the same choices
+// as the filter menu. You can tick more than one. Each keeps its value in a hidden input
+// ("Brush On, Dip") so saving and editing work like ordinary fields.
+
+const SELECT_FIELDS = { firingRange: "firing", application: "application", finish: "finish", opacity: "opacity", foodSafe: "foodSafe" };
+const SELECT_LABELS = { firingRange: "Firing Range", application: "Application", finish: "Finish", opacity: "Opacity", foodSafe: "Food Safe" };
+const splitValues = (v) => String(v || "").split(",").map((x) => x.trim()).filter(Boolean);
+const sameText = (a, b) => a.toLowerCase() === b.toLowerCase();
+
+// Turns text like "Midfire, Cone 5-6" into the matching choices ("Mid Fire, Cone 5, Cone 6").
+// Text that matches no choice is kept as it is, so nothing the website said gets lost.
+function toChoices(field, text) {
+  if (!text) return [];
+  const category = SELECT_FIELDS[field];
+  const probe = { [field]: text, tags: [], name: "" };
+  const found = FILTERS[category].filter((opt) => matchesFilter(probe, category, opt));
+  return found.length ? found : [text];
+}
+
+function normalizeSelects(root, { flash = false } = {}) {
+  for (const field of Object.keys(SELECT_FIELDS)) {
+    const input = $("#f-" + field, root);
+    if (!input) continue;
+    input.value = toChoices(field, input.value).join(", ");
+    renderSelect($(`.select[data-field="${field}"]`, root), { flash: flash && !!input.value });
+  }
+}
+
+function renderSelect(box, { flash = false } = {}) {
+  if (!box) return;
+  const field = box.dataset.field;
+  const category = SELECT_FIELDS[field];
+  const input = $("#f-" + field, box);
+  const chosen = splitValues(input.value);
+  const extras = chosen.filter((v) => !FILTERS[category].some((o) => sameText(o, v)));
+  const wasOpen = box.classList.contains("open");
+
+  box.innerHTML = "";
+  box.append(input);
+  box.insertAdjacentHTML("beforeend", `
+    <button type="button" class="select-btn" aria-haspopup="listbox" aria-expanded="${wasOpen}"
+            aria-labelledby="l-${field}">
+      ${chosen.length ? escapeHtml(chosen.join(", ")) : `<span class="select-placeholder">${escapeHtml(input.placeholder || "Choose…")}</span>`}
+    </button>
+    <div class="select-pop" role="listbox" aria-multiselectable="true" aria-label="${SELECT_LABELS[field]}">
+      ${[...FILTERS[category], ...extras].map((opt) => `
+        <div class="select-row">
+          <button type="button" class="select-opt${extras.includes(opt) ? " extra" : ""}" role="option"
+                  aria-selected="${chosen.some((v) => sameText(v, opt))}" data-value="${escapeHtml(opt)}">
+            <span class="check" aria-hidden="true">✓</span><span>${escapeHtml(opt)}</span>
+            ${extras.includes(opt) ? `<span class="note">not in list</span>` : ""}
+          </button>
+          ${extras.includes(opt) ? "" : `<button type="button" class="select-remove" data-remove-choice="${escapeHtml(opt)}"
+              title="Remove “${escapeHtml(opt)}” from the list" aria-label="Remove ${escapeHtml(opt)} from the list">×</button>`}
+        </div>`).join("")}
+      <div class="select-add">
+        <button type="button" class="select-add-btn">+ Add option</button>
+        <div class="select-add-form" hidden>
+          <input class="select-add-input" maxlength="40" placeholder="New ${SELECT_LABELS[field].toLowerCase()}" aria-label="New ${SELECT_LABELS[field]} option">
+          <button type="button" class="select-add-save">Add</button>
+        </div>
+      </div>
+    </div>`);
+  if (flash) restartClass($(".select-btn", box), "autofilled");
+}
+
+function closeSelects(except) {
+  $$(".select.open").forEach((box) => {
+    if (box === except) return;
+    box.classList.remove("open", "up");
+    $(".select-btn", box).setAttribute("aria-expanded", "false");
+  });
+}
+
+function setSelectValues(box, values) {
+  $("input[type=hidden]", box).value = values.join(", ");
+  renderSelect(box);
+}
+
+panelEl.addEventListener("click", async (e) => {
+  const box = e.target.closest(".select");
+  if (!box) return;
+
+  // Open / close
+  if (e.target.closest(".select-btn")) {
+    const opening = !box.classList.contains("open");
+    closeSelects(box);
+    box.classList.toggle("open", opening);
+    $(".select-btn", box).setAttribute("aria-expanded", String(opening));
+    if (opening) {
+      box.classList.add("opening");
+      setTimeout(() => box.classList.remove("opening"), 220);
+      // Open upward when there isn't room below
+      const pop = $(".select-pop", box);
+      box.classList.toggle("up", box.getBoundingClientRect().bottom + pop.offsetHeight + 12 > innerHeight);
+    }
+    return;
+  }
+
+  // Tick / untick a choice (the list stays open so you can tick several)
+  const opt = e.target.closest(".select-opt");
+  if (opt) {
+    const values = splitValues($("input[type=hidden]", box).value);
+    const value = opt.dataset.value;
+    const next = values.some((v) => sameText(v, value)) ? values.filter((v) => !sameText(v, value)) : [...values, value];
+    setSelectValues(box, next);
+    $$(".select-opt", box).find((o) => o.dataset.value === value)?.focus();
+    return;
+  }
+
+  if (e.target.closest(".select-add-save")) addFromBox(box);
+
+  const remove = e.target.closest("[data-remove-choice]");
+  if (remove) removeFromBox(box, remove.dataset.removeChoice);
+
+  // "+ Add option" shows a little text box
+  if (e.target.closest(".select-add-btn")) {
+    e.target.closest(".select-add-btn").hidden = true;
+    const form = $(".select-add-form", box);
+    form.hidden = false;
+    $(".select-add-input", form).focus();
+  }
+});
+
+// Enter in the new-option box adds it (and doesn't submit the glaze form)
+panelEl.addEventListener("keydown", (e) => {
+  if (e.key !== "Enter" || !e.target.closest(".select-add-input")) return;
+  e.preventDefault();
+  addFromBox(e.target.closest(".select"));
+});
+
+async function addFromBox(box) {
+  const form = $(".select-add-form", box);
+  const field = box.dataset.field;
+  const category = SELECT_FIELDS[field];
+  const label = $(".select-add-input", form).value.trim().replace(/\s+/g, " ");
+  if (!label) return;
+
+  const select = (value) => {
+    const values = splitValues($("input[type=hidden]", box).value).filter((v) => !sameText(v, value));
+    setSelectValues(box, [...values, value]);
+  };
+  const existing = FILTERS[category].find((o) => sameText(o, label));
+  if (existing) return select(existing); // already a choice: just tick it
+
+  closeSelects();
+  const ok = await askPassword({
+    title: "Add a new option?",
+    text: `Enter the studio password to add <strong>${escapeHtml(label)}</strong> to ${SELECT_LABELS[field]}. Everyone will see it in the filters.`,
+    confirm: "Add option",
+  });
+  if (!ok) return;
+
+  const msg = $("#formMsg");
+  msg.textContent = "";
+  try {
+    await GlazeStore.addOption(category, label);
+  } catch (err) {
+    if (!err.needsSetup) { msg.textContent = err.message; return; }
+    msg.textContent = `“${label}” is added for this visit only. Run supabase/migrations/20261008_options_and_editing.sql in Supabase to keep new options.`;
+  }
+  addChoice(category, label);
+  select(label);
+}
+
+// Adds a choice to a dropdown list and to the filter menu
+function addChoice(category, label, at = FILTERS[category].length) {
+  if (FILTERS[category].some((o) => sameText(o, label))) return;
+  FILTERS[category].splice(at, 0, label);
+  buildSortPanel();
+}
+
+// Takes a choice out of the dropdown and the filter menu (glazes that used it keep the text).
+// Returns where it was, so Undo can put it back in the same spot.
+function removeChoice(category, label) {
+  const at = FILTERS[category].findIndex((o) => sameText(o, label));
+  if (at < 0) return -1;
+  FILTERS[category].splice(at, 1);
+  [...state.filters[category]].forEach((v) => { if (sameText(v, label)) state.filters[category].delete(v); });
+  buildSortPanel();
+  updateGrid();
+  return at;
+}
+
+async function removeFromBox(box, label) {
+  const field = box.dataset.field;
+  const category = SELECT_FIELDS[field];
+  closeSelects();
+  const ok = await askPassword({
+    title: "Remove this option?",
+    text: `Enter the studio password to remove <strong>${escapeHtml(label)}</strong> from ${SELECT_LABELS[field]}. ` +
+      `It disappears from the dropdown and the filters for everyone. Glazes that already use it keep it.`,
+    confirm: "Remove option",
+    danger: true,
+  });
+  if (!ok) return;
+
+  const msg = $("#formMsg");
+  msg.textContent = "";
+  try {
+    await GlazeStore.removeOption(category, label);
+  } catch (err) {
+    msg.textContent = err.needsSetup
+      ? "Removing options needs the setup files in supabase/migrations to be run in Supabase."
+      : err.message;
+    return;
+  }
+  const at = removeChoice(category, label);
+  renderSelect(box); // it stays ticked on this glaze if it was, shown as "not in list"
+
+  showToast(`Removed <strong>${escapeHtml(label)}</strong> from ${SELECT_LABELS[field]}`, {
+    undo: async () => {
+      try {
+        await GlazeStore.restoreOption(category, label);
+      } catch (err) {
+        showToast(escapeHtml(err.message), { ms: 6000 });
+        return;
+      }
+      addChoice(category, label, at);
+      const open = $(`.select[data-field="${field}"]`);
+      if (open) renderSelect(open);
+    },
+  });
+}
+// Clicking anywhere else, or Esc, closes an open dropdown
+// (composedPath still knows where the click happened even if the list was redrawn since)
+document.addEventListener("click", (e) => {
+  if (!e.composedPath().some((el) => el.classList && el.classList.contains("select"))) closeSelects();
+});
+panelEl.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && e.target.closest(".select.open")) {
+    e.stopPropagation(); // close just the dropdown, not the panel
+    const box = e.target.closest(".select");
+    closeSelects();
+    $(".select-btn", box).focus();
+  }
+});
+
 // ---------- Name search: looks the glaze up on the web as you type ----------
 
 const SEARCH_ICON = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>`;
@@ -925,18 +1347,39 @@ function pick(result) {
   $("#f-name").value = result.name;
   for (const key of INFO_FIELDS) {
     const el = $("#f-" + key);
-    el.value = result[key] || "";
-    el.placeholder = result[key] ? "" : "Not listed by " + result.source;
+    // Notes start with anything the website says about how much the glaze runs
+    const found = key === "notes" ? result.fluidity : result[key];
+    el.value = found || "";
+    if (key !== "notes") el.placeholder = found ? "" : "Not listed by " + result.source;
     el.classList.remove("autofilled");
-    if (result[key]) { void el.offsetWidth; el.classList.add("autofilled"); }
+    if (found) { void el.offsetWidth; el.classList.add("autofilled"); }
   }
+  normalizeSelects(document, { flash: true });
   upload.brand = result.brand || "";
   upload.tags = [...new Set([result.brand, ...(result.tags || [])].filter(Boolean))];
   renderUploadTags();
+  useWebPhoto(result.image);
 
   const note = $("#sourceNote");
   note.hidden = false;
   note.innerHTML = `Details from <a href="${escapeHtml(result.url)}" target="_blank" rel="noopener">${escapeHtml(result.source)} ↗</a>`;
+}
+
+// Shows the manufacturer's photo, unless the person already has a photo of their own
+function useWebPhoto(src) {
+  if (upload.file || (upload.photo && !upload.webPhoto)) return;
+  const zone = $("#dropzone");
+  const preview = $("#photoPreview");
+  upload.webPhoto = !!src;
+  upload.photo = src || "";
+  preview.hidden = !src;
+  zone.classList.toggle("has-photo", !!src);
+  if (src) {
+    preview.src = src;
+    $("#dropSquare", zone).style.background = "";
+  } else {
+    preview.removeAttribute("src");
+  }
 }
 
 // ---------- Log in / account ----------
@@ -1090,6 +1533,21 @@ async function loadGlazes() {
   }
   updateGrid();
   applySavedFavorites();
+  loadChoices();
+}
+
+// Choices people have added to the dropdowns (shared through Supabase)
+async function loadChoices() {
+  const result = await GlazeStore.loadOptions();
+  if (!result.options) {
+    if (!result.needsSetup) console.warn("Dropdown options:", result.error);
+    return;
+  }
+  // Added choices join the list; removed ones (built-in or added) leave it
+  result.options.forEach(({ category, label, removed }) => {
+    if (!FILTERS[category]) return;
+    removed ? removeChoice(category, label) : addChoice(category, label);
+  });
 }
 
 buildSortPanel();

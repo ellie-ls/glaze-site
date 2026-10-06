@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Maitree:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/app.css?v=20261008b">
+  <link rel="stylesheet" href="css/app.css?v=20261010c">
 </head>
 <body>
 
@@ -35,6 +35,14 @@
 
     <!-- Sort + filters, always visible -->
     <div class="sort" id="sort">
+      <!-- Phone-sized screens: the panel folds up behind this toggle -->
+      <div class="sort-head">
+        <button class="sort-toggle" id="sortToggle" aria-expanded="false" aria-controls="sortBody">
+          Sort By <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3"/></svg>
+        </button>
+        <button class="clear-btn" data-clear hidden>Clear</button>
+      </div>
+      <div class="sort-body" id="sortBody"><div class="sort-inner">
       <div class="sort-col sort-first">
         <div class="sort-order" role="radiogroup" aria-label="Sort order">
           <button class="opt" data-sort="newest" role="radio">Newest</button>
@@ -42,7 +50,7 @@
           <button class="opt" data-sort="az" role="radio">A to Z</button>
           <button class="opt" data-sort="color" role="radio">Color</button>
         </div>
-        <button class="clear-btn" id="clearFilters" hidden>Clear</button>
+        <button class="clear-btn" data-clear hidden>Clear</button>
       </div>
       <div class="sort-col">
         <h3>Color</h3>
@@ -72,6 +80,7 @@
         <h3>Brand</h3>
         <div class="opts" data-filter="brand"></div>
       </div>
+      </div></div>
     </div>
   </header>
 
@@ -148,12 +157,16 @@
         </div>
         <p class="source-note" id="sourceNote" hidden></p>
         <div class="field"><label for="f-code">Code:</label><input id="f-code" name="code" autocomplete="off"></div>
-        <div class="field"><label for="f-firingRange">Firing Range:</label><input id="f-firingRange" name="firingRange" autocomplete="off"></div>
-        <div class="field"><label for="f-application">Application:</label><input id="f-application" name="application" autocomplete="off"></div>
-        <div class="field"><label for="f-finish">Finish:</label><input id="f-finish" name="finish" autocomplete="off"></div>
-        <div class="field"><label for="f-opacity">Opacity:</label><input id="f-opacity" name="opacity" autocomplete="off"></div>
-        <div class="field"><label for="f-foodSafe">Food Safe:</label><input id="f-foodSafe" name="foodSafe" autocomplete="off"></div>
-        <div class="field"><label for="f-fluidity">Fluidity:</label><input id="f-fluidity" name="fluidity" autocomplete="off"></div>
+        <div class="field"><label id="l-firingRange">Firing Range:</label><div class="select" data-field="firingRange"><input type="hidden" id="f-firingRange"></div></div>
+        <div class="field"><label id="l-application">Application:</label><div class="select" data-field="application"><input type="hidden" id="f-application"></div></div>
+        <div class="field"><label id="l-finish">Finish:</label><div class="select" data-field="finish"><input type="hidden" id="f-finish"></div></div>
+        <div class="field"><label id="l-opacity">Opacity:</label><div class="select" data-field="opacity"><input type="hidden" id="f-opacity"></div></div>
+        <div class="field"><label id="l-foodSafe">Food Safe:</label><div class="select" data-field="foodSafe"><input type="hidden" id="f-foodSafe"></div></div>
+        <div class="field"><label for="f-notes">Notes:</label><input id="f-notes" name="notes" autocomplete="off" maxlength="300" placeholder="Anything worth remembering"></div>
+        <div class="field color-field">
+          <span class="field-label" id="colorLabel">Color:</span>
+          <div class="form-swatches" id="formSwatches" role="group" aria-labelledby="colorLabel"></div>
+        </div>
       </div>
 
       <div class="tags-row">
@@ -219,8 +232,10 @@
       <h2 id="authTitle"></h2>
       <p id="authText"></p>
       <div class="field">
-        <label for="f-confirm-password">Password:</label>
-        <input type="password" id="f-confirm-password" autocomplete="current-password">
+        <label for="f-confirm-password">Studio password:</label>
+        <!-- A text box drawn as dots, not a password box, so browsers don't offer to save "bisque" -->
+        <input type="text" id="f-confirm-password" class="secret" autocomplete="off" spellcheck="false"
+               autocapitalize="off" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other">
       </div>
       <p class="account-msg" id="authMsg" role="status"></p>
       <div class="confirm-actions">
@@ -231,11 +246,11 @@
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=20261008b"></script>
-  <script src="supabase/functions/_shared/glaze-parse.js?v=20261008b"></script>
-  <script src="js/glaze-lookup.js?v=20261008b"></script>
-  <script src="js/mock-data.js?v=20261008b"></script>
-  <script src="js/glaze-store.js?v=20261008b"></script>
-  <script src="js/app.js?v=20261008b"></script>
+  <script src="config.js?v=20261009e"></script>
+  <script src="supabase/functions/_shared/glaze-parse.js?v=20261009e"></script>
+  <script src="js/glaze-lookup.js?v=20261009e"></script>
+  <script src="js/mock-data.js?v=20261009e"></script>
+  <script src="js/glaze-store.js?v=20261009e"></script>
+  <script src="js/app.js?v=20261010a"></script>
 </body>
 </html>

@@ -4,7 +4,7 @@
 const GlazeStore = (function () {
   const BUCKET = "glaze-images";
   const COLUMNS = "id, title, image_url, user_id, created_at, code, brand, firing_range, application, finish, " +
-    "opacity, food_safe, fluidity, tags, color, accent, speckled, color_family, sort_color, base_favorites";
+    "opacity, food_safe, notes, tags, color, accent, speckled, color_family, sort_color, base_favorites";
 
   function fromRow(r) {
     return {
@@ -17,7 +17,7 @@ const GlazeStore = (function () {
       finish: r.finish || "",
       opacity: r.opacity || "",
       foodSafe: r.food_safe || "",
-      fluidity: r.fluidity || "",
+      notes: r.notes || "",
       tags: r.tags || [],
       color: r.color || "",
       accent: r.accent || "",
@@ -42,7 +42,7 @@ const GlazeStore = (function () {
       finish: g.finish || "",
       opacity: g.opacity || "",
       food_safe: g.foodSafe || "",
-      fluidity: g.fluidity || "",
+      notes: g.notes || "",
       tags: g.tags || [],
       color: g.color || "",
       accent: g.accent || "",
@@ -83,7 +83,12 @@ const GlazeStore = (function () {
 
   async function update(g) {
     const { data, error } = await db.from("glazes").update(toRow(g)).eq("id", g.id).select(COLUMNS).single();
-    if (error) throw new Error("Couldn’t save your changes: " + error.message);
+    if (error) {
+      // No row back means the database's edit rule said no (the older setup only let owners edit)
+      throw new Error(error.code === "PGRST116"
+        ? "The database didn’t allow that edit. Run supabase/migrations/20261008_options_and_editing.sql in Supabase."
+        : "Couldn’t save your changes: " + error.message);
+    }
     return fromRow(data);
   }
 
@@ -91,7 +96,9 @@ const GlazeStore = (function () {
     // .select() returns the deleted row, so we can tell "deleted" apart from "not allowed"
     const { data, error } = await db.from("glazes").delete().eq("id", g.id).select("id");
     if (error) throw new Error("Couldn’t delete the glaze: " + error.message);
-    if (!data.length) throw new Error("You can only delete glazes you added.");
+    if (!data.length) {
+      throw new Error("The database didn’t allow that delete. Run supabase/migrations/20261008_options_and_editing.sql in Supabase.");
+    }
   }
 
   // Undo: puts a deleted glaze back with its original owner and date, so it returns to the same spot
@@ -102,5 +109,67 @@ const GlazeStore = (function () {
     return fromRow(data);
   }
 
-  return { load, uploadPhoto, create, update, remove, restore };
+  // ---- Dropdown choices (table "glaze_options") ----
+  // Rows are choices people added, plus any choice that's been removed (removed = true),
+  // built-in ones included, so a removal can be undone.
+
+  const SETUP_MSG = "Run supabase/migrations/20261009b_remove_any_option.sql in Supabase first.";
+  const missingTable = (e) => e && (e.code === "42P01" || e.code === "PGRST205");
+  const escapeLike = (text) => text.replace(/[\\%_]/g, "\\$&");
+
+  // Returns { options: [{ category, label, removed }] }, or { error, needsSetup } when the table isn't there yet
+  async function loadOptions() {
+    if (typeof db === "undefined") return { error: "Can’t reach Supabase." };
+    let { data, error } = await db.from("glaze_options").select("category, label, removed").order("created_at");
+    if (error && error.code === "42703") { // the "removed" column isn't there yet
+      ({ data, error } = await db.from("glaze_options").select("category, label").order("created_at"));
+    }
+    if (error) return { error: error.message, needsSetup: missingTable(error) };
+    return { options: data.map((o) => ({ ...o, removed: !!o.removed })) };
+  }
+
+  // The row for a choice, matched however it's capitalized
+  async function findOption(category, label) {
+    const { data, error } = await db.from("glaze_options").select("id, label")
+      .eq("category", category).ilike("label", escapeLike(label)).limit(1);
+    if (error) throw error;
+    return data[0] || null;
+  }
+
+  // Marks a choice as listed (removed = false) or removed (removed = true), creating its row if needed
+  async function setOption(category, label, removed) {
+    let row;
+    try {
+      row = await findOption(category, label);
+    } catch (error) {
+      const e = new Error(missingTable(error) ? "setup" : "Couldn’t reach the options list: " + error.message);
+      e.needsSetup = missingTable(error);
+      throw e;
+    }
+    const result = row
+      ? await db.from("glaze_options").update({ removed }).eq("id", row.id).select("id")
+      : await db.from("glaze_options").insert({ category, label, removed }).select("id");
+    if (result.error) {
+      if (result.error.code === "42703") throw new Error("Removing options needs one more setup step. " + SETUP_MSG);
+      throw new Error("Couldn’t save that change: " + result.error.message);
+    }
+    if (!result.data.length) throw new Error("The database didn’t allow that change. " + SETUP_MSG);
+  }
+
+  // Adding a choice that was removed earlier just brings it back
+  async function addOption(category, label) {
+    try {
+      await setOption(category, label, false);
+    } catch (err) {
+      // Before the latest setup step, a plain insert still works for brand-new choices
+      if (err.needsSetup) throw err;
+      const { error } = await db.from("glaze_options").insert({ category, label });
+      if (error && error.code !== "23505") throw err;
+    }
+  }
+
+  const removeOption = (category, label) => setOption(category, label, true);
+  const restoreOption = (category, label) => setOption(category, label, false);
+
+  return { load, uploadPhoto, create, update, remove, restore, loadOptions, addOption, removeOption, restoreOption };
 })();

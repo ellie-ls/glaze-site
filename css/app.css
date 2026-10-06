@@ -135,12 +135,15 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 /* ---------- Sort + filter panel ---------- */
 
 .sort {
-  display: flex; flex-wrap: wrap; justify-content: space-between;
-  gap: 14px clamp(16px, 2.4vw, 40px);
   padding: 12px 22px 10px;
   border: 1px solid var(--line); border-radius: 2px;
   background: var(--bg);
 }
+.sort-inner {
+  display: flex; flex-wrap: wrap; justify-content: space-between;
+  gap: 14px clamp(16px, 2.4vw, 40px);
+}
+.sort-head { display: none; } /* only phones fold the panel away */
 
 .sort-col { display: flex; flex-direction: column; gap: 4px; }
 .sort-first { justify-content: space-between; }
@@ -207,6 +210,87 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
   font-family: var(--mono); font-size: 12.5px; line-height: 1.5;
   max-width: 80ch;
 }
+/* Dropdowns in the upload form (Application, Firing Range, Finish, Opacity, Food Safe) */
+.select { position: relative; min-width: 0; }
+.select-btn {
+  position: relative; display: block; width: 100%; height: 26px;
+  padding: 0 26px 0 8px;
+  border: 1px solid #b4aaa2; border-radius: 3px; background: var(--bg);
+  font-family: var(--mono); font-size: 13px; text-align: left;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: border-color var(--fast), box-shadow var(--fast), background var(--fast);
+}
+.select-btn::after {
+  content: ""; position: absolute; right: 9px; top: 50%;
+  width: 6px; height: 6px; margin-top: -5px;
+  border-right: 1.5px solid var(--ink); border-bottom: 1.5px solid var(--ink);
+  transform: rotate(45deg); transition: transform var(--slow) var(--ease);
+}
+.select-btn:hover { border-color: var(--ink); }
+.select.open .select-btn { border-color: var(--ink); box-shadow: 0 0 0 3px var(--green); }
+.select.open .select-btn::after { transform: translateY(3px) rotate(225deg); }
+.select-btn.autofilled { animation: filled 1.4s ease-out; }
+.select-placeholder { color: #b2a79e; }
+
+.select-pop {
+  display: none;
+  position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 6;
+  max-height: 230px; overflow: auto;
+  padding: 4px;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 4px;
+  box-shadow: 0 14px 28px -16px rgba(46, 35, 29, .5);
+}
+.select.up .select-pop { top: auto; bottom: calc(100% + 4px); }
+.select.open .select-pop { display: block; }
+.select.opening .select-pop { animation: drop 200ms var(--ease); } /* only when it first opens, not on every tick */
+/* The whole row (choice and ×) shares one hover */
+.select-row { display: flex; align-items: center; gap: 2px; border-radius: 3px; transition: background var(--fast); }
+.select-row:hover, .select-row:focus-within { background: var(--soft); }
+.select-opt {
+  display: flex; align-items: center; gap: 8px; width: 100%; flex: 1; min-width: 0;
+  padding: 5px 6px; border-radius: 3px;
+  font-family: var(--mono); font-size: 12.5px; text-align: left;
+  transition: background var(--fast);
+}
+
+.select-opt .check {
+  display: grid; place-items: center; flex: none;
+  width: 14px; height: 14px; border: 1px solid var(--line); border-radius: 3px;
+  font-size: 10px; line-height: 1; color: transparent;
+  transition: background var(--fast), color var(--fast);
+}
+.select-opt[aria-selected="true"] .check { background: var(--green); color: var(--ink); }
+.select-opt .note { margin-left: auto; font-size: 10.5px; color: var(--muted); }
+.select-remove {
+  flex: none; width: 26px; height: 26px; margin-right: 2px;
+  display: grid; place-items: center;
+  font-size: 15px; line-height: 1; color: var(--muted);
+}
+.select-add { margin-top: 4px; padding-top: 4px; border-top: 1px solid #e6e1dc; }
+.select-add-btn {
+  width: 100%; padding: 5px 6px; border-radius: 3px; text-align: left;
+  font-family: var(--mono); font-size: 12.5px; color: var(--muted);
+  transition: background var(--fast), color var(--fast);
+}
+.select-add-btn:hover { background: var(--soft); color: var(--ink); }
+.select-add-form { display: flex; gap: 6px; padding: 4px 2px; }
+.select-add-input {
+  flex: 1; min-width: 0; height: 26px; padding: 0 8px;
+  border: 1px solid #b4aaa2; border-radius: 3px;
+  font-family: var(--mono); font-size: 12.5px;
+}
+.select-add-input:focus { outline: none; border-color: var(--ink); box-shadow: 0 0 0 3px var(--green); }
+.select-add-save {
+  height: 26px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px;
+  font-family: var(--mono); font-size: 12px;
+  transition: background var(--fast);
+}
+.select-add-save:hover { background: var(--green); }
+
+/* Color groups in the upload form: picked automatically, click to change */
+.field-label { font-size: 16px; white-space: nowrap; }
+.form-swatches { display: grid; grid-template-columns: repeat(7, 15px); gap: 4px 5px; padding: 3px 0; }
+.form-swatches .swatch { width: 15px; height: 15px; }
 .form-msg { margin: 12px 0 0; min-height: 0; font-family: var(--mono); font-size: 12px; color: var(--danger); }
 .form-msg:empty { display: none; }
 .grid:empty { padding-bottom: 0; }
@@ -223,9 +307,9 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
   text-align: left;
 }
 .card { position: relative; }
-.card-open { display: flex; flex-direction: column; gap: 8px; text-align: left; }
+.card-open { display: flex; flex-direction: column; gap: 8px; text-align: left; width: 100%; }
 .card .tile {
-  aspect-ratio: 1; border-radius: 6px;
+  width: 100%; aspect-ratio: 1; border-radius: 6px; /* explicit width: iOS Safari collapses it otherwise */
   background: var(--tile);
   background-size: cover; background-position: center;
   transition: transform var(--slow) var(--ease), box-shadow var(--slow) var(--ease);
@@ -329,6 +413,8 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 .attrs { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 7px 10px; align-items: center; }
 .attrs dt { font-size: 15px; }
 .attrs dd { margin: 0; }
+.attrs dd.notes { font-size: 14px; line-height: 1.45; max-width: 34ch; }
+.attrs dd.notes.is-blank { color: var(--muted); font-style: italic; }
 .chip {
   display: inline-block;
   padding: 1px 7px;
@@ -362,8 +448,8 @@ button.tag:hover, .tag.removable:hover { background: var(--green); }
 .upload-form .photo-box { display: flex; align-items: center; justify-content: center; height: auto; padding: 12px 16px ; }
 .drop-square {
   position: relative;
-  /* ~240px header above + ~450px of form below: the drop square gets whatever height is left */
-  width: clamp(110px, calc(100vh - 700px), 230px); aspect-ratio: 1; border-radius: 4px;
+  /* ~240px header above + ~490px of form below: the drop square gets whatever height is left */
+  width: clamp(100px, calc(100vh - 734px), 230px); aspect-ratio: 1; border-radius: 4px;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
   overflow: hidden;
   border: 1px solid #c9c2bb;
@@ -496,8 +582,9 @@ button.tag:hover, .tag.removable:hover { background: var(--green); }
 .confirm h2 { margin: 0 0 8px; font-size: 22px; font-weight: 400; }
 .confirm p { margin: 0 0 22px; font-size: 15px; line-height: 1.5; }
 .confirm p strong { font-weight: 400; font-family: var(--mono); font-size: 14px; }
-.confirm .field { grid-template-columns: 92px 1fr; }
 .confirm .field input { height: 32px; }
+.confirm .field { grid-template-columns: 132px 1fr; }
+.secret { -webkit-text-security: disc; text-security: disc; }
 .confirm .account-msg { margin: 8px 0 14px; }
 .confirm-actions { display: flex; justify-content: flex-end; gap: 12px; }
 
@@ -540,7 +627,7 @@ button.tag:hover, .tag.removable:hover { background: var(--green); }
 /* Title moves onto its own row before it can collide with the search,
    and filter columns pack to the left once they wrap */
 @media (max-width: 1200px) {
-  .sort { justify-content: flex-start; column-gap: 32px; }
+  .sort-inner { justify-content: flex-start; column-gap: 32px; }
   .top { grid-template-columns: 1fr auto; }
   .site-title { grid-column: 1 / -1; grid-row: 1; text-align: left; }
 }
@@ -551,7 +638,6 @@ button.tag:hover, .tag.removable:hover { background: var(--green); }
   .icon-pill { width: 48px; }
   .search { max-width: none; }
   .actions .btn { padding: 0 14px; }
-  .sort { justify-content: flex-start; }
 
   .layout.has-panel { grid-template-columns: minmax(0, 1fr); }
   .layout.has-panel .divider { display: none; }
@@ -569,6 +655,44 @@ button.tag:hover, .tag.removable:hover { background: var(--green); }
 @media (max-width: 520px) {
   .top-left { grid-column: 1 / -1; }
   .actions { grid-column: 1 / -1; justify-self: start; }
+
+  /* Sort + filters fold up behind a "Sort By" toggle and open downward */
+  .sort { padding: 0; border-radius: 10px; }
+  .sort-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 12px 6px 8px;
+  }
+  .sort-toggle {
+    display: inline-flex; align-items: center; gap: 8px;
+    height: 34px; padding: 0 10px; border-radius: 6px;
+    font-family: var(--mono); font-size: 14px;
+  }
+  .sort-toggle svg {
+    width: 12px; height: 12px;
+    fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round;
+    transition: transform var(--slow) var(--ease);
+  }
+  .sort.is-open .sort-toggle svg { transform: rotate(180deg); }
+  .sort-head .clear-btn { align-self: center; margin: 0; font-size: 13px; padding: 4px 8px; }
+  .sort-first .clear-btn { display: none; } /* it lives up in the head instead */
+
+  .sort-body {
+    display: grid; grid-template-rows: 0fr;
+    transition: grid-template-rows var(--slow) var(--ease);
+  }
+  .sort.is-open .sort-body { grid-template-rows: 1fr; }
+  .sort-inner {
+    min-height: 0; overflow: hidden;
+    display: grid; grid-template-columns: auto auto; justify-content: start;
+    gap: 18px 12px;
+    padding: 0 14px;
+    visibility: hidden;
+    transition: padding var(--slow) var(--ease), visibility 0s var(--slow);
+  }
+  .sort.is-open .sort-inner { padding: 4px 14px 18px; visibility: visible; transition: padding var(--slow) var(--ease); }
+  .sort-first { grid-column: 1 / -1; }
+  .opt { font-size: 12.5px; line-height: 1.75; }
+  .opts.two { column-gap: 10px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

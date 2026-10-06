@@ -1,3 +1,8 @@
+// glaze-lookup: Supabase edge function for the Westridge Ceramics glaze site.
+// GENERATED FILE: paste this whole file into the Supabase dashboard editor.
+// Built by scripts/build-dashboard-function.py from supabase/functions/_shared/glaze-parse.js;
+// edit those sources and rebuild rather than editing this copy.
+
 // Turns glaze info found on manufacturer websites into the fields our form uses.
 // Shared by the browser (js/glaze-lookup.js) and the Supabase edge function.
 //
@@ -333,3 +338,55 @@
     fromMaycoStore, fromMaycoWp, coyoteFromHtml, isSpectrumKit, fromSpectrumWp, fromLaguna, matches, rank,
   };
 })();
+
+// ---------------------------------------------------------------------------------------------
+// The edge function: looks a glaze up on Mayco and Coyote and returns what they say about it.
+// Called by the site as  GET {SUPABASE_URL}/functions/v1/glaze-lookup?q=cobalt
+
+const P = globalThis.GlazeParse;
+
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
+};
+
+const UA = { "User-Agent": "Mozilla/5.0 (glaze-lookup; Westridge Ceramics)" };
+
+function json(body, status = 200) {
+  return new Response(JSON.stringify(body), { status, headers: { ...CORS, "Content-Type": "application/json" } });
+}
+
+// Mayco's store catalog has more detail than its public pages (food safety, SKU)
+async function searchMayco(q) {
+  const url = "https://www.maycocolors.com/wp-json/wc/store/v1/products?per_page=8&search=" + encodeURIComponent(q);
+  const res = await fetch(url, { headers: UA, signal: AbortSignal.timeout(8000) });
+  if (!res.ok) return [];
+  const products = await res.json();
+  return products.map(P.fromMaycoStore);
+}
+
+// Coyote's whole glaze list is one page, so keep it in memory for an hour
+let coyoteCache = null;
+
+async function searchCoyote(q) {
+  if (!coyoteCache || Date.now() - coyoteCache.at > 60 * 60 * 1000) {
+    const res = await fetch("https://coyoteclay.com/BuyCone6.html", { headers: UA, signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return [];
+    const html = new TextDecoder("latin1").decode(await res.arrayBuffer());
+    coyoteCache = { at: Date.now(), items: P.coyoteFromHtml(html) };
+  }
+  return coyoteCache.items.filter((it) => P.matches(q, it));
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
+
+  const q = (new URL(req.url).searchParams.get("q") || "").trim().slice(0, 80);
+  if (q.length < 2) return json({ results: [] });
+
+  // A source that fails or times out just contributes nothing
+  const settled = await Promise.allSettled([searchMayco(q), searchCoyote(q)]);
+  const results = settled.flatMap((s) => (s.status === "fulfilled" ? s.value : []));
+
+  return json({ results: P.rank(q, results).slice(0, 8) });
+});
