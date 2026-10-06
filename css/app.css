@@ -134,23 +134,26 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 
 /* ---------- Sort + filter panel ---------- */
 
+/* Every item in a column carries the same 6px side inset as an option's
+   highlight, so columns sit flush with the panel padding and with each other */
+
 .sort {
-  padding: 12px 22px 10px;
+  padding: 12px 16px 10px;
   border: 1px solid var(--line); border-radius: 2px;
   background: var(--bg);
 }
 .sort-inner {
-  display: flex; flex-wrap: wrap; justify-content: space-between;
-  gap: 14px clamp(16px, 2.4vw, 40px);
+  display: flex; justify-content: space-between;
+  gap: 18px 4px;
 }
 .sort-head { display: none; } /* only phones fold the panel away */
 
 .sort-col { display: flex; flex-direction: column; gap: 4px; }
 .sort-first { justify-content: space-between; }
-.sort-col h3 { margin: 0 0 3px; font-size: 13px; font-weight: 600; font-family: var(--serif); }
+.sort-col h3 { margin: 0 0 3px; padding: 0 6px; font-size: 13px; font-weight: 600; font-family: var(--serif); }
 .sort-order { display: flex; flex-direction: column; gap: 1px; }
 .clear-btn {
-  align-self: flex-start; margin: 6px 0 0 -6px;
+  align-self: flex-start; margin: 6px 0 0;
   font-family: var(--mono); font-size: 11px; color: var(--muted);
   padding: 1px 6px; border-radius: 3px;
   transition: background var(--fast), color var(--fast);
@@ -158,12 +161,12 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 .clear-btn:hover { background: var(--soft); color: var(--ink); }
 
 .opts { display: flex; flex-direction: column; gap: 1px; }
-.opts.two { display: grid; grid-template-columns: auto auto; column-gap: 14px; grid-auto-flow: column; grid-template-rows: repeat(3, auto); }
+.opts.two { display: grid; grid-template-columns: auto auto; column-gap: 2px; grid-auto-flow: column; grid-template-rows: repeat(3, auto); }
 
 .opt {
   text-align: left;
   font-family: var(--mono); font-size: 12.5px; line-height: 1.5;
-  padding: 1px 6px; margin-left: -6px;
+  padding: 1px 6px;
   border-radius: 3px;
   transition: background var(--fast), color var(--fast);
   white-space: nowrap;
@@ -171,7 +174,7 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 .opt:hover { background: var(--soft); }
 .opt[aria-checked="true"], .opt[aria-pressed="true"] { background: var(--green); color: var(--ink); }
 
-.swatches { display: grid; grid-template-columns: repeat(7, 18px); gap: 6px; }
+.swatches { display: grid; grid-template-columns: repeat(7, 18px); gap: 6px; padding: 0 6px; }
 .swatch {
   width: 18px; height: 18px; border-radius: 50%;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .12);
@@ -624,12 +627,23 @@ button.tag:hover, .tag.removable:hover { background: var(--green); }
   .search { max-width: 240px; }
 }
 
-/* Title moves onto its own row before it can collide with the search,
-   and filter columns pack to the left once they wrap */
+/* Title moves onto its own row before it can collide with the search */
 @media (max-width: 1200px) {
-  .sort-inner { justify-content: flex-start; column-gap: 32px; }
   .top { grid-template-columns: 1fr auto; }
   .site-title { grid-column: 1 / -1; grid-row: 1; text-align: left; }
+}
+
+/* Filter columns move into an evenly spread grid once they no longer fit in one row */
+@media (max-width: 1140px) {
+  .sort-inner { display: grid; grid-template-columns: repeat(4, auto); justify-content: space-between; }
+}
+
+@media (max-width: 760px) {
+  .sort-inner { grid-template-columns: repeat(3, auto); }
+}
+
+@media (max-width: 600px) {
+  .sort-inner { grid-template-columns: repeat(2, auto); }
 }
 
 @media (max-width: 860px) {
@@ -683,16 +697,17 @@ button.tag:hover, .tag.removable:hover { background: var(--green); }
   .sort.is-open .sort-body { grid-template-rows: 1fr; }
   .sort-inner {
     min-height: 0; overflow: hidden;
-    display: grid; grid-template-columns: auto auto; justify-content: start;
+    display: grid; grid-template-columns: auto auto; justify-content: space-between;
     gap: 18px 12px;
-    padding: 0 14px;
+    padding: 0 12px;
     visibility: hidden;
     transition: padding var(--slow) var(--ease), visibility 0s var(--slow);
   }
-  .sort.is-open .sort-inner { padding: 4px 14px 18px; visibility: visible; transition: padding var(--slow) var(--ease); }
+  .sort.is-open .sort-inner { padding: 4px 12px 18px; visibility: visible; transition: padding var(--slow) var(--ease); }
   .sort-first { grid-column: 1 / -1; }
   .opt { font-size: 12.5px; line-height: 1.75; }
-  .opts.two { column-gap: 10px; }
+  .opts.two { column-gap: 0; }
+  .swatches { gap: 6px 4px; }
 }
 
 /* iPhones zoom the page into any field whose text is under 16px, so touch screens get 16px text */
