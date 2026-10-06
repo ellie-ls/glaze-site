@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Add glaze</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <nav>
+    <a href="glazes.html">Glazes</a>
+    <a href="add-glaze.html">Add glaze</a>
+    <a href="#" onclick="logOut()">Log out</a>
+  </nav>
+
+  <h1>Add a glaze</h1>
+
+  <form onsubmit="addGlaze(event)">
+    <label>Title
+      <input type="text" id="title" required>
+    </label>
+    <label>Photo (under 2 MB)
+      <input type="file" id="photo" accept="image/*" required>
+    </label>
+    <label>Notes
+      <textarea id="notes" rows="4" placeholder="Glossy, runs a bit..."></textarea>
+    </label>
+    <button type="submit">Add glaze</button>
+    <p id="message"></p>
+  </form>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script>
+    // Only logged-in people can add glazes. Everyone else goes to the login page.
+    async function checkLogin() {
+      const result = await db.auth.getSession();
+      if (!result.data.session) {
+        window.location.href = "login.html";
+      }
+    }
+    checkLogin();
+
+    async function addGlaze(event) {
+      event.preventDefault(); // stops the page from reloading
+
+      const title = document.getElementById("title").value;
+      const notes = document.getElementById("notes").value;
+      const file = document.getElementById("photo").files[0];
+      const message = document.getElementById("message");
+
+      // Keep photos small so the free storage lasts
+      if (file.size > 2 * 1024 * 1024) {
+        message.textContent = "That photo is over 2 MB. Please pick a smaller one.";
+        return;
+      }
+
+      message.textContent = "Uploading...";
+
+      // Give the photo a safe, unique file name
+      const fileName = Date.now() + "-" + file.name.replace(/[^a-zA-Z0-9.]/g, "_");
+
+      // Step 1: upload the photo to storage
+      const upload = await db.storage.from("glaze-images").upload(fileName, file);
+      if (upload.error) {
+        message.textContent = "Photo upload failed: " + upload.error.message;
+        return;
+      }
+
+      // Step 2: get the photo's web address
+      const urlResult = db.storage.from("glaze-images").getPublicUrl(fileName);
+      const imageUrl = urlResult.data.publicUrl;
+
+      // Step 3: save the glaze in the database
+      const insert = await db.from("glazes").insert({
+        title: title,
+        notes: notes,
+        image_url: imageUrl
+      });
+      if (insert.error) {
+        message.textContent = "Could not save glaze: " + insert.error.message;
+        return;
+      }
+
+      window.location.href = "glazes.html";
+    }
+  </script>
+</body>
+</html>

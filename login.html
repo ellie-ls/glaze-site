@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Log in</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <nav>
+    <a href="glazes.html">Glazes</a>
+    <a href="add-glaze.html">Add glaze</a>
+  </nav>
+
+  <h1>Log in</h1>
+
+  <div class="loginBox">
+    <label>Email
+      <input type="email" id="email">
+    </label>
+    <label>Password (at least 6 characters)
+      <input type="password" id="password">
+    </label>
+    <button onclick="logIn()">Log in</button>
+    <button onclick="signUp()">Create account</button>
+    <p id="message"></p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script>
+    async function logIn() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      const result = await db.auth.signInWithPassword({ email: email, password: password });
+      if (result.error) {
+        document.getElementById("message").textContent = result.error.message;
+        return;
+      }
+      window.location.href = "glazes.html";
+    }
+
+    async function signUp() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      const result = await db.auth.signUp({ email: email, password: password });
+      if (result.error) {
+        document.getElementById("message").textContent = result.error.message;
+        return;
+      }
+
+      if (result.data.session) {
+        // Email confirmation is off, so we are already logged in
+        window.location.href = "glazes.html";
+      } else {
+        document.getElementById("message").textContent = "Check your email to confirm your account, then log in.";
+      }
+    }
+  </script>
+</body>
+</html>

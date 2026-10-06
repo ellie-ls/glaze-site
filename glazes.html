@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Glazes</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <nav>
+    <a href="glazes.html">Glazes</a>
+    <a href="add-glaze.html">Add glaze</a>
+    <a href="login.html" id="loginLink">Log in</a>
+  </nav>
+
+  <h1>Glazes</h1>
+  <div id="grid">Loading...</div>
+
+  <!-- Pop-up window (hidden until you click a glaze) -->
+  <div id="modal" onclick="closeModal()">
+    <div class="modalBox" onclick="event.stopPropagation()">
+      <img id="modalImg" src="">
+      <h2 id="modalTitle"></h2>
+      <p id="modalNotes"></p>
+      <button id="deleteBtn">Delete glaze</button>
+      <button onclick="closeModal()">Close</button>
+    </div>
+  </div>
+
+  <!-- Supabase library, then our settings, then this page's code -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script>
+    // Remembers who is logged in (stays empty if nobody is)
+    let currentUserId = null;
+
+    async function start() {
+      const result = await db.auth.getSession();
+      if (result.data.session) {
+        currentUserId = result.data.session.user.id;
+        // Turn the "Log in" link into a "Log out" link
+        const link = document.getElementById("loginLink");
+        link.textContent = "Log out";
+        link.href = "#";
+        link.onclick = logOut;
+      }
+      loadGlazes();
+    }
+
+    // Get every glaze from the database and show it in the grid
+    async function loadGlazes() {
+      const grid = document.getElementById("grid");
+      const result = await db.from("glazes").select("*").order("created_at", { ascending: false });
+
+      if (result.error) {
+        grid.textContent = "Could not load glazes: " + result.error.message;
+        return;
+      }
+      if (result.data.length === 0) {
+        grid.textContent = "No glazes yet. Log in and add the first one.";
+        return;
+      }
+
+      grid.innerHTML = "";
+      for (const glaze of result.data) {
+        const card = document.createElement("div");
+        card.className = "card";
+
+        const img = document.createElement("img");
+        img.src = glaze.image_url;
+
+        const name = document.createElement("p");
+        name.textContent = glaze.title;
+
+        card.append(img, name);
+        card.onclick = function () { openGlaze(glaze); };
+        grid.append(card);
+      }
+    }
+
+    // Fill the pop-up with one glaze's info and show it
+    function openGlaze(glaze) {
+      document.getElementById("modalImg").src = glaze.image_url;
+      document.getElementById("modalTitle").textContent = glaze.title;
+      document.getElementById("modalNotes").textContent = glaze.notes || "";
+
+      // Only show the delete button to the person who added this glaze
+      const deleteBtn = document.getElementById("deleteBtn");
+      if (glaze.user_id === currentUserId) {
+        deleteBtn.style.display = "inline-block";
+      } else {
+        deleteBtn.style.display = "none";
+      }
+      deleteBtn.onclick = async function () {
+        if (confirm("Delete this glaze?")) {
+          await db.from("glazes").delete().eq("id", glaze.id);
+          closeModal();
+          loadGlazes();
+        }
+      };
+
+      document.getElementById("modal").style.display = "flex";
+    }
+
+    function closeModal() {
+      document.getElementById("modal").style.display = "none";
+    }
+
+    start();
+  </script>
+</body>
+</html>

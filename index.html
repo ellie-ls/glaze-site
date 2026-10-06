@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Westridge Ceramics</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Maitree:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/app.css?v=20261008b">
+</head>
+<body>
+
+  <header class="top" id="top">
+    <div class="top-left">
+      <button class="icon-pill" id="profileBtn" aria-pressed="false" title="Log in">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c.9-3.9 3.9-6 7.5-6s6.6 2.1 7.5 6"/></svg>
+        <span class="visually-hidden" id="profileLabel">Log in</span>
+      </button>
+      <button class="icon-pill" id="favFilter" aria-pressed="false" title="Show favorites only">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20C9.2 18 4.4 14.4 3.1 10.9 1.9 7.6 4 4.5 7.2 4.5c2 0 3.6 1.1 4.8 2.8 1.2-1.7 2.8-2.8 4.8-2.8 3.2 0 5.3 3.1 4.1 6.4C19.6 14.4 14.8 18 12 20z"/></svg>
+        <span class="visually-hidden">Favorites only</span>
+      </button>
+      <label class="search">
+        <span class="visually-hidden">Search glazes</span>
+        <input type="search" id="search" placeholder="Search" autocomplete="off">
+      </label>
+    </div>
+
+    <h1 class="site-title">Westridge Ceramics</h1>
+
+    <div class="actions" id="actions">
+      <button class="btn" id="uploadBtn">Upload Glaze <span class="btn-icon" aria-hidden="true">+</span></button>
+    </div>
+
+    <!-- Sort + filters, always visible -->
+    <div class="sort" id="sort">
+      <div class="sort-col sort-first">
+        <div class="sort-order" role="radiogroup" aria-label="Sort order">
+          <button class="opt" data-sort="newest" role="radio">Newest</button>
+          <button class="opt" data-sort="favorited" role="radio">Most Favorited</button>
+          <button class="opt" data-sort="az" role="radio">A to Z</button>
+          <button class="opt" data-sort="color" role="radio">Color</button>
+        </div>
+        <button class="clear-btn" id="clearFilters" hidden>Clear</button>
+      </div>
+      <div class="sort-col">
+        <h3>Color</h3>
+        <div class="swatches" id="swatches"></div>
+      </div>
+      <div class="sort-col">
+        <h3>Application</h3>
+        <div class="opts" data-filter="application"></div>
+      </div>
+      <div class="sort-col">
+        <h3>Firing Range</h3>
+        <div class="opts two" data-filter="firing"></div>
+      </div>
+      <div class="sort-col">
+        <h3>Finish</h3>
+        <div class="opts two" data-filter="finish"></div>
+      </div>
+      <div class="sort-col">
+        <h3>Opacity</h3>
+        <div class="opts" data-filter="opacity"></div>
+      </div>
+      <div class="sort-col">
+        <h3>Food Safe</h3>
+        <div class="opts" data-filter="foodSafe"></div>
+      </div>
+      <div class="sort-col">
+        <h3>Brand</h3>
+        <div class="opts" data-filter="brand"></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout" id="layout">
+    <div class="gallery">
+      <p class="notice" id="notice" role="status" hidden></p>
+      <section class="grid" id="grid" aria-label="Glazes"></section>
+      <div class="empty" id="empty" hidden>
+        <p>No glazes match your search and filters.</p>
+        <button class="btn" id="resetAll">Show all glazes</button>
+      </div>
+    </div>
+    <div class="divider" aria-hidden="true"></div>
+    <aside class="panel" id="panel" aria-live="polite"></aside>
+  </main>
+
+  <!-- Detail panel -->
+  <template id="detailTemplate">
+    <div class="panel-inner">
+      <div class="panel-tools">
+        <button class="close-btn" data-close title="Close"><span aria-hidden="true">×</span><span class="visually-hidden">Close</span></button>
+        <button class="tool-btn" data-edit title="Edit glaze" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/></svg>
+          <span class="visually-hidden">Edit glaze</span>
+        </button>
+        <button class="tool-btn danger" data-delete title="Delete glaze" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 7h15M10 4h4M6.5 7l1 13h9l1-13M10 11v6M14 11v6"/></svg>
+          <span class="visually-hidden">Delete glaze</span>
+        </button>
+      </div>
+      <div class="photo-row">
+        <div class="photo" data-photo></div>
+        <div class="fav-col">
+          <button class="fav" data-fav aria-pressed="false" title="Favorite">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20C9.2 18 4.4 14.4 3.1 10.9 1.9 7.6 4 4.5 7.2 4.5c2 0 3.6 1.1 4.8 2.8 1.2-1.7 2.8-2.8 4.8-2.8 3.2 0 5.3 3.1 4.1 6.4C19.6 14.4 14.8 18 12 20z"/></svg>
+            <span class="visually-hidden">Favorite</span>
+          </button>
+          <span class="fav-count" data-count></span>
+        </div>
+      </div>
+      <div class="detail-head">
+        <h2 class="detail-name" data-name></h2>
+        <p class="detail-code"><span data-code></span>
+          <a data-web target="_blank" rel="noopener">Google ↗</a>
+          <a data-images target="_blank" rel="noopener">Pottery photos ↗</a>
+        </p>
+      </div>
+      <dl class="attrs" data-attrs></dl>
+      <div class="tags-row"><span class="tags-label">Tags:</span><div class="tags" data-tags></div></div>
+    </div>
+  </template>
+
+  <!-- Upload panel -->
+  <template id="uploadTemplate">
+    <form class="panel-inner upload-form" id="uploadForm" novalidate>
+      <button type="button" class="close-btn" data-close title="Close"><span aria-hidden="true">×</span><span class="visually-hidden">Close</span></button>
+      <label class="photo-box dropzone" id="dropzone">
+        <input type="file" accept="image/*" id="photoInput" class="visually-hidden">
+        <span class="drop-square" id="dropSquare">
+          <span class="dropzone-label">Upload<br>Image</span>
+          <svg class="dropzone-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v4.5h14V14"/></svg>
+          <img id="photoPreview" alt="" hidden>
+        </span>
+      </label>
+
+      <div class="fields">
+        <div class="field name-field">
+          <label for="f-name">Name:</label>
+          <div class="combo">
+            <input id="f-name" name="name" autocomplete="off" role="combobox" aria-autocomplete="list"
+                   aria-expanded="false" aria-controls="suggestions" placeholder="Start typing to search the web">
+            <div class="suggestions" id="suggestions" role="listbox" hidden></div>
+          </div>
+        </div>
+        <p class="source-note" id="sourceNote" hidden></p>
+        <div class="field"><label for="f-code">Code:</label><input id="f-code" name="code" autocomplete="off"></div>
+        <div class="field"><label for="f-firingRange">Firing Range:</label><input id="f-firingRange" name="firingRange" autocomplete="off"></div>
+        <div class="field"><label for="f-application">Application:</label><input id="f-application" name="application" autocomplete="off"></div>
+        <div class="field"><label for="f-finish">Finish:</label><input id="f-finish" name="finish" autocomplete="off"></div>
+        <div class="field"><label for="f-opacity">Opacity:</label><input id="f-opacity" name="opacity" autocomplete="off"></div>
+        <div class="field"><label for="f-foodSafe">Food Safe:</label><input id="f-foodSafe" name="foodSafe" autocomplete="off"></div>
+        <div class="field"><label for="f-fluidity">Fluidity:</label><input id="f-fluidity" name="fluidity" autocomplete="off"></div>
+      </div>
+
+      <div class="tags-row">
+        <span class="tags-label">Tags:</span>
+        <div class="tags" id="uploadTags"></div>
+        <input class="tag-input" id="tagInput" placeholder="Ex. Glossy" hidden>
+        <button type="button" class="tag-add" id="tagAdd" title="Add tag">+</button>
+      </div>
+
+      <p class="form-msg" id="formMsg" role="alert"></p>
+      <div class="form-actions">
+        <button type="button" class="btn" data-close>Cancel <span class="btn-icon circle" aria-hidden="true">×</span></button>
+        <button type="submit" class="btn btn-solid" id="saveBtn">Upload <span class="btn-icon circle" aria-hidden="true">↑</span></button>
+      </div>
+    </form>
+  </template>
+
+  <!-- Account panel: log in, create an account, or log out -->
+  <template id="loginTemplate">
+    <form class="panel-inner account" id="loginForm" novalidate>
+      <button type="button" class="close-btn" data-close title="Close"><span aria-hidden="true">×</span><span class="visually-hidden">Close</span></button>
+      <h2 class="account-title" id="accountTitle">Log in</h2>
+      <p class="account-note" id="accountNote">Log in to upload glazes and keep your favorites.</p>
+      <div class="fields">
+        <div class="field" id="nameRow" hidden><label for="f-account-name">Name:</label><input id="f-account-name" autocomplete="name" placeholder="Your name"></div>
+        <div class="field"><label for="f-email">Email:</label><input id="f-email" type="email" autocomplete="email"></div>
+        <div class="field"><label for="f-password">Password:</label><input id="f-password" type="password" autocomplete="current-password" placeholder="At least 6 characters"></div>
+      </div>
+      <p class="account-msg" id="accountMsg" role="status"></p>
+      <div class="account-actions">
+        <button type="submit" class="btn" id="loginSubmit">Log in <span class="btn-icon" aria-hidden="true">→</span></button>
+        <button type="button" class="link-btn" id="modeSwitch">New here? Create an account</button>
+      </div>
+    </form>
+  </template>
+
+  <template id="accountTemplate">
+    <div class="panel-inner account">
+      <button type="button" class="close-btn" data-close title="Close"><span aria-hidden="true">×</span><span class="visually-hidden">Close</span></button>
+      <h2 class="account-title" id="accountName">Your account</h2>
+      <p class="account-note">Logged in as <span class="chip" id="accountEmail"></span></p>
+      <form class="fields" id="renameForm">
+        <div class="field"><label for="f-rename">Name:</label><input id="f-rename" autocomplete="name"></div>
+      </form>
+      <p class="account-msg" id="renameMsg" role="status"></p>
+      <div class="account-actions">
+        <button type="button" class="btn" id="accountUpload">Upload Glaze <span class="btn-icon" aria-hidden="true">+</span></button>
+        <button type="button" class="link-btn" id="logoutBtn">Log out</button>
+      </div>
+    </div>
+  </template>
+
+  <!-- "Glaze deleted" message with Undo -->
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden>
+    <span id="toastText"></span>
+    <button class="toast-undo" id="toastUndo">Undo</button>
+    <button class="toast-close" id="toastClose" title="Dismiss"><span aria-hidden="true">×</span><span class="visually-hidden">Dismiss</span></button>
+  </div>
+
+  <!-- Password check before editing or deleting a glaze -->
+  <dialog class="confirm" id="authDialog" aria-labelledby="authTitle">
+    <form id="authForm" novalidate>
+      <h2 id="authTitle"></h2>
+      <p id="authText"></p>
+      <div class="field">
+        <label for="f-confirm-password">Password:</label>
+        <input type="password" id="f-confirm-password" autocomplete="current-password">
+      </div>
+      <p class="account-msg" id="authMsg" role="status"></p>
+      <div class="confirm-actions">
+        <button type="button" class="btn" id="authCancel">Cancel</button>
+        <button type="submit" class="btn" id="authOk"></button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js?v=20261008b"></script>
+  <script src="supabase/functions/_shared/glaze-parse.js?v=20261008b"></script>
+  <script src="js/glaze-lookup.js?v=20261008b"></script>
+  <script src="js/mock-data.js?v=20261008b"></script>
+  <script src="js/glaze-store.js?v=20261008b"></script>
+  <script src="js/app.js?v=20261008b"></script>
+</body>
+</html>
