@@ -88,6 +88,8 @@
   <main class="layout" id="layout">
     <div class="gallery">
       <p class="notice" id="notice" role="status" hidden></p>
+      <!-- Shown while the favorites heart is on: All favorites, each project, New project + -->
+      <nav class="projects-bar" id="projectsBar" aria-label="Favorite projects" hidden></nav>
       <section class="grid" id="grid" aria-label="Glazes"></section>
       <div class="empty" id="empty" hidden>
         <p>No glazes match your search and filters.</p>
@@ -220,6 +222,45 @@
     </div>
   </template>
 
+  <!-- Project panel: name a project and pick glazes for it from your favorites -->
+  <template id="projectTemplate">
+    <form class="panel-inner project-form" id="projectForm" novalidate>
+      <button type="button" class="close-btn" data-close title="Close"><span aria-hidden="true">×</span><span class="visually-hidden">Close</span></button>
+      <h2 class="account-title" id="projectHeading">New project</h2>
+      <p class="account-note">Group favorite glazes for a piece or a class.</p>
+      <div class="fields">
+        <div class="field"><label for="p-name">Name:</label><input id="p-name" maxlength="60" autocomplete="off" placeholder="e.g. Spring mugs"></div>
+      </div>
+      <div class="project-pick-head">
+        <span class="field-label">Glazes:</span>
+        <span class="project-count" id="projectCount"></span>
+      </div>
+      <div class="project-pick" id="projectPick" role="group" aria-label="Glazes in this project"></div>
+      <p class="form-msg" id="projectMsg" role="alert"></p>
+      <div class="form-actions">
+        <button type="button" class="btn" data-close>Cancel <span class="btn-icon circle" aria-hidden="true">×</span></button>
+        <button type="submit" class="btn btn-solid" id="projectSave">Save project <span class="btn-icon circle" aria-hidden="true">✓</span></button>
+      </div>
+    </form>
+  </template>
+
+  <!-- After hearting a glaze: choose project folders for it -->
+  <div class="fav-pop" id="favPop" role="dialog" aria-labelledby="favPopTitle" hidden>
+    <div class="fav-pop-head">
+      <p id="favPopTitle"></p>
+      <button type="button" class="toast-close" id="favPopClose" title="Close"><span aria-hidden="true">×</span><span class="visually-hidden">Close</span></button>
+    </div>
+    <p class="fav-pop-sub">Add it to a project:</p>
+    <div class="fav-pop-list" id="favPopList"></div>
+    <div class="fav-pop-new">
+      <button type="button" class="select-add-btn" id="favPopNewBtn">+ New project</button>
+      <input class="select-add-input" id="favPopNewName" maxlength="60" placeholder="New project name" aria-label="New project name" hidden>
+    </div>
+    <div class="fav-pop-actions">
+      <button type="button" class="btn btn-solid" id="favPopSave">Save <span class="btn-icon circle" aria-hidden="true">✓</span></button>
+    </div>
+  </div>
+
   <!-- "Glaze deleted" message with Undo -->
   <div class="toast" id="toast" role="status" aria-live="polite" hidden>
     <span id="toastText"></span>
@@ -247,11 +288,11 @@
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=20261009g"></script>
-  <script src="supabase/functions/_shared/glaze-parse.js?v=20261009g"></script>
-  <script src="js/glaze-lookup.js?v=20261009g"></script>
-  <script src="js/mock-data.js?v=20261009g"></script>
-  <script src="js/glaze-store.js?v=20261009g"></script>
-  <script src="js/app.js?v=20261010a"></script>
+  <script src="config.js?v=20261010b"></script>
+  <script src="supabase/functions/_shared/glaze-parse.js?v=20261010b"></script>
+  <script src="js/glaze-lookup.js?v=20261010b"></script>
+  <script src="js/mock-data.js?v=20261010b"></script>
+  <script src="js/glaze-store.js?v=20261010b"></script>
+  <script src="js/app.js?v=20261010b"></script>
 </body>
 </html>

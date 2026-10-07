@@ -538,6 +538,64 @@ button.tag:hover, .tag.removable:hover { background: var(--green); }
 .btn-danger { background: var(--danger); border-color: var(--danger); color: #fff; }
 .btn-danger:hover { background: #8a2f21; color: #fff; }
 
+/* ---------- Projects (folders of favorites) ---------- */
+
+.projects-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 20px; margin: 0 0 22px; }
+.project-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.project-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 34px; padding: 0 14px;
+  border: 1px solid var(--line); border-radius: 999px;
+  font-family: var(--mono); font-size: 13px;
+  transition: background var(--fast);
+}
+.project-chip:hover, .project-chip[aria-pressed="true"] { background: var(--green); }
+.project-chip-count { font-size: 11px; color: var(--muted); }
+.project-new { height: 34px; font-size: 13px; padding: 0 16px; }
+.project-tools { display: flex; gap: 12px; }
+
+/* Glaze checklist (project panel and the pop-up) */
+.project-pick-head { display: flex; align-items: baseline; justify-content: space-between; margin: 16px 0 6px; }
+.project-count { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.project-pick {
+  max-height: clamp(160px, calc(100vh - 560px), 420px); overflow: auto;
+  border: 1px solid #d9d2cb; border-radius: 4px; padding: 4px;
+}
+.project-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 5px 6px; border-radius: 3px; cursor: pointer;
+  transition: background var(--fast);
+}
+.project-row:hover { background: var(--soft); }
+.project-row input { width: 15px; height: 15px; margin: 0; accent-color: var(--ink); flex: none; }
+.project-thumb { width: 26px; height: 26px; border-radius: 4px; flex: none; background-size: cover; background-position: center; }
+.project-row-name { flex: 1; min-width: 0; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.project-row-code { font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+.project-empty { margin: 10px 6px; font-size: 14px; color: var(--muted); }
+
+/* After hearting: pick project folders, bottom center */
+.fav-pop {
+  position: fixed; left: 50%; bottom: 28px; z-index: 31;
+  transform: translateX(-50%);
+  width: min(360px, calc(100% - 32px));
+  padding: 14px 14px 12px 18px;
+  border: 1px solid var(--line); border-radius: 12px;
+  background: var(--bg); color: var(--ink);
+  box-shadow: 0 18px 40px -18px rgba(46, 35, 29, .6);
+}
+.fav-pop.showing { animation: toastIn 360ms var(--glide); }
+.fav-pop.hiding { animation: toastOut 220ms ease-in forwards; }
+.fav-pop-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.fav-pop-head p { margin: 4px 0 0; font-size: 15px; line-height: 1.35; }
+.fav-pop-head strong { font-weight: 400; font-family: var(--mono); font-size: 13.5px; }
+.fav-pop-heart { color: var(--ink); }
+.fav-pop-sub { margin: 10px 0 4px; font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+.fav-pop-list { max-height: 168px; overflow: auto; margin: 0 -6px; }
+.fav-pop-new { margin: 2px -6px 0; }
+.fav-pop-new .select-add-input { width: calc(100% - 12px); margin: 4px 6px; }
+.fav-pop-actions { display: flex; justify-content: flex-end; margin-top: 10px; }
+.fav-pop-actions .btn { height: 34px; font-size: 13px; padding: 0 16px; }
+
 /* "Deleted" message with Undo, bottom center */
 .toast {
   position: fixed; left: 50%; bottom: 28px; z-index: 30;

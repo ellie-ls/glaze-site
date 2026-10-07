@@ -151,6 +151,7 @@ const state = {
   filters: Object.fromEntries([...Object.keys(FILTERS), "color"].map((k) => [k, new Set()])),
   query: "",
   favoritesOnly: false,
+  project: null, // id of the project shown while favorites are on (null = all favorites)
   user: null, // the logged-in Supabase user, if any
   panel: null, // null | "detail" | "upload"
   selectedId: null,
@@ -194,7 +195,10 @@ function matchesFilter(g, key, option) {
 function visibleGlazes() {
   const q = state.query.trim().toLowerCase();
   const list = glazes.filter((g) => {
-    if (state.favoritesOnly && !g.favorited) return false;
+    if (state.favoritesOnly) {
+      const project = state.project && getProjects().find((p) => p.id === state.project);
+      if (project ? !project.glazes.includes(glazeKey(g)) : !g.favorited) return false;
+    }
     if (q) {
       const hay = [g.name, g.code, g.brand, ...(g.tags || [])].join(" ").toLowerCase();
       if (!q.split(/\s+/).every((w) => hay.includes(w))) return false;
@@ -444,6 +448,7 @@ async function toggleFavorite(g) {
     if (state.favoritesOnly || state.sort === "favorited") updateGrid();
     return;
   }
+  if (g.favorited) showFavPop(g);
   // Only adopt the saved copy if nothing else changed while it was saving
   const now = new Set(glazes.filter((x) => x.favorited).map(glazeKey));
   const saved = new Set(data.user.user_metadata.favorites || []);
@@ -501,7 +506,9 @@ $("#resetAll").addEventListener("click", () => {
   state.query = "";
   $("#search").value = "";
   state.favoritesOnly = false;
+  state.project = null;
   $("#favFilter").setAttribute("aria-pressed", "false");
+  renderProjectsBar();
   syncSortPanel();
   updateGrid();
 });
@@ -525,7 +532,9 @@ $("#search").addEventListener("input", (e) => { state.query = e.target.value; up
 $("#favFilter").addEventListener("click", (e) => {
   if (!state.user) return openLogin("Log in to see the glazes you've hearted.");
   state.favoritesOnly = !state.favoritesOnly;
+  state.project = null;
   e.currentTarget.setAttribute("aria-pressed", String(state.favoritesOnly));
+  renderProjectsBar();
   updateGrid();
 });
 
@@ -985,6 +994,238 @@ async function deleteGlaze(g) {
       updateGrid(); // the tile fades back in as the others make room
     },
   });
+}
+
+// ---------- Projects: folders of favorite glazes ----------
+// Each account keeps its projects in its Supabase user data, next to its favorites:
+// projects = [{ id, name, glazes: [glaze keys] }]. A glaze can be in any number of projects.
+
+function getProjects() {
+  return (state.user && state.user.user_metadata && state.user.user_metadata.projects) || [];
+}
+
+// Saves the whole list. The change shows right away; if saving fails it's put back.
+async function saveProjects(next) {
+  const before = getProjects();
+  const local = (list) => {
+    state.user = { ...state.user, user_metadata: { ...(state.user.user_metadata || {}), projects: list } };
+    if (state.project && !list.some((p) => p.id === state.project)) state.project = null;
+    renderProjectsBar();
+    if (state.favoritesOnly) updateGrid();
+  };
+  local(next);
+  const { data, error } = await db.auth.updateUser({ data: { projects: next } });
+  if (error) {
+    local(before);
+    showToast(`Couldn’t save your projects: ${escapeHtml(error.message)}`, { ms: 6000 });
+    return false;
+  }
+  state.user = data.user;
+  return true;
+}
+
+const newProjectId = () => (crypto.randomUUID ? crypto.randomUUID() : "p" + Date.now() + Math.random().toString(36).slice(2));
+const glazeByKey = (key) => glazes.find((g) => glazeKey(g) === key);
+
+// The bar above the gallery while favorites are on
+function renderProjectsBar() {
+  const bar = $("#projectsBar");
+  if (!state.favoritesOnly || !state.user) { bar.hidden = true; return; }
+  const projects = getProjects();
+  const favCount = glazes.filter((g) => g.favorited).length;
+  const chip = (id, label, count) => `
+    <button type="button" class="project-chip" data-project="${id}" aria-pressed="${(state.project || "") === id}">
+      ${escapeHtml(label)} <span class="project-chip-count">${count}</span>
+    </button>`;
+  const current = projects.find((p) => p.id === state.project);
+  bar.innerHTML = `
+    <div class="project-chips">
+      ${chip("", "All favorites", favCount)}
+      ${projects.map((p) => chip(p.id, p.name, p.glazes.filter(glazeByKey).length)).join("")}
+      <button type="button" class="btn project-new" id="newProjectBtn">New project <span class="btn-icon" aria-hidden="true">+</span></button>
+    </div>
+    ${current ? `<div class="project-tools">
+      <button type="button" class="link-btn" data-project-edit>Edit project</button>
+      <button type="button" class="link-btn" data-project-delete>Delete project</button>
+    </div>` : ""}`;
+  bar.hidden = false;
+}
+
+$("#projectsBar").addEventListener("click", (e) => {
+  const chip = e.target.closest("[data-project]");
+  if (chip) {
+    state.project = chip.dataset.project || null;
+    renderProjectsBar();
+    updateGrid();
+    return;
+  }
+  if (e.target.closest("#newProjectBtn")) return openProject();
+  if (e.target.closest("[data-project-edit]")) return openProject(state.project);
+  if (e.target.closest("[data-project-delete]")) deleteProject(state.project);
+});
+
+async function deleteProject(id) {
+  const projects = getProjects();
+  const index = projects.findIndex((p) => p.id === id);
+  if (index < 0) return;
+  const project = projects[index];
+  if (state.panel === "project") closePanel();
+  if (!(await saveProjects(projects.filter((p) => p.id !== id)))) return;
+  showToast(`Deleted project <strong>${escapeHtml(project.name)}</strong>`, {
+    undo: async () => {
+      const now = getProjects();
+      await saveProjects([...now.slice(0, index), project, ...now.slice(index)]);
+      state.project = project.id;
+      renderProjectsBar();
+      updateGrid();
+    },
+  });
+}
+
+// ---- New / edit project in the side panel ----
+function openProject(id) {
+  if (!state.user) return openLogin("Log in to make projects from your favorites.");
+  const existing = id ? getProjects().find((p) => p.id === id) : null;
+  const chosen = new Set(existing ? existing.glazes : []);
+  state.selectedId = null;
+
+  showPanel("project", () => {
+    const view = $("#projectTemplate").content.cloneNode(true);
+    $("#projectHeading", view).textContent = existing ? "Edit project" : "New project";
+    $("#p-name", view).value = existing ? existing.name : "";
+
+    // Favorites, plus anything already in this project that's since been un-hearted
+    // (one row per glaze code, even if the library has the same code twice)
+    const seenKeys = new Set();
+    const choices = glazes.filter((g) => g.favorited || chosen.has(glazeKey(g)))
+      .sort((a, b) => byCode(a, b))
+      .filter((g) => !seenKeys.has(glazeKey(g)) && seenKeys.add(glazeKey(g)));
+    const pick = $("#projectPick", view);
+    pick.innerHTML = choices.length
+      ? choices.map((g) => {
+          const key = glazeKey(g);
+          return `<label class="project-row">
+            <input type="checkbox" value="${escapeHtml(key)}" ${chosen.has(key) ? "checked" : ""}>
+            <span class="project-thumb" style="background:${escapeHtml(tileBackground(g) || "var(--tile)")}"></span>
+            <span class="project-row-name">${escapeHtml(g.name)}</span>
+            <span class="project-row-code">${escapeHtml(g.code || "")}</span>
+          </label>`;
+        }).join("")
+      : `<p class="project-empty">Heart glazes in the gallery and they’ll show up here to choose from.</p>`;
+
+    const count = $("#projectCount", view);
+    const updateCount = () => {
+      const n = pick.querySelectorAll("input:checked").length;
+      count.textContent = n ? `${n} selected` : "";
+    };
+    pick.addEventListener("change", updateCount);
+    updateCount();
+
+    $("#projectForm", view).addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const nameInput = $("#p-name");
+      const name = nameInput.value.trim();
+      if (!name) {
+        restartClass(nameInput, "invalid");
+        nameInput.focus();
+        return;
+      }
+      const keys = [...new Set([...pick.querySelectorAll("input:checked")].map((c) => c.value))];
+      const projects = getProjects();
+      const project = { id: existing ? existing.id : newProjectId(), name, glazes: keys };
+      const next = existing ? projects.map((p) => (p.id === existing.id ? project : p)) : [...projects, project];
+      $("#projectSave").disabled = true;
+      if (!(await saveProjects(next))) { $("#projectSave").disabled = false; return; }
+      state.favoritesOnly = true;
+      state.project = project.id;
+      $("#favFilter").setAttribute("aria-pressed", "true");
+      closePanel();
+      renderProjectsBar();
+      showToast(`${existing ? "Saved" : "Created"} project <strong>${escapeHtml(name)}</strong>`, { ms: 3500 });
+    });
+    return view;
+  });
+  setTimeout(() => $("#p-name")?.focus({ preventScroll: true }), 350);
+}
+
+// ---- The pop-up after hearting a glaze ----
+const favPop = $("#favPop");
+let favPopGlaze = null;
+let favPopTimer = null;
+
+function showFavPop(g) {
+  favPopGlaze = g;
+  const key = glazeKey(g);
+  $("#favPopTitle").innerHTML = `<span class="fav-pop-heart" aria-hidden="true">♥</span> Added <strong>${escapeHtml(g.name)}</strong> to favorites`;
+  const projects = getProjects();
+  $("#favPopList").innerHTML = projects.map((p) => `
+    <label class="project-row">
+      <input type="checkbox" value="${escapeHtml(p.id)}" ${p.glazes.includes(key) ? "checked" : ""}>
+      <span class="project-row-name">${escapeHtml(p.name)}</span>
+      <span class="project-row-code">${p.glazes.filter(glazeByKey).length}</span>
+    </label>`).join("");
+  $("#favPopList").hidden = !projects.length;
+  const nameInput = $("#favPopNewName");
+  nameInput.value = "";
+  // No projects yet: go straight to naming one
+  nameInput.hidden = !!projects.length;
+  $("#favPopNewBtn").hidden = !projects.length;
+  favPop.hidden = false;
+  favPop.classList.remove("hiding");
+  restartClass(favPop, "showing");
+  // It goes away on its own unless someone starts using it
+  clearTimeout(favPopTimer);
+  favPopTimer = setTimeout(hideFavPop, 9000);
+}
+
+function hideFavPop() {
+  clearTimeout(favPopTimer);
+  favPopGlaze = null;
+  if (favPop.hidden) return;
+  favPop.classList.add("hiding");
+  setTimeout(() => { if (favPop.classList.contains("hiding")) favPop.hidden = true; }, 220);
+}
+
+// Any use of the pop-up keeps it open until Save or ×
+["pointerenter", "focusin", "change"].forEach((ev) => favPop.addEventListener(ev, () => clearTimeout(favPopTimer)));
+$("#favPopClose").addEventListener("click", hideFavPop);
+$("#favPopNewBtn").addEventListener("click", () => {
+  $("#favPopNewBtn").hidden = true;
+  const input = $("#favPopNewName");
+  input.hidden = false;
+  input.focus();
+});
+$("#favPopNewName").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { e.preventDefault(); saveFavPop(); }
+});
+$("#favPopSave").addEventListener("click", saveFavPop);
+favPop.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") { e.stopPropagation(); hideFavPop(); }
+});
+
+async function saveFavPop() {
+  const g = favPopGlaze;
+  if (!g) return hideFavPop();
+  const key = glazeKey(g);
+  const ticked = new Set([...$$("#favPopList input:checked")].map((c) => c.value));
+  let next = getProjects().map((p) => {
+    const has = p.glazes.includes(key);
+    if (ticked.has(p.id) && !has) return { ...p, glazes: [...p.glazes, key] };
+    if (!ticked.has(p.id) && has) return { ...p, glazes: p.glazes.filter((k) => k !== key) };
+    return p;
+  });
+  const newName = $("#favPopNewName").value.trim();
+  if (newName) {
+    next = [...next, { id: newProjectId(), name: newName, glazes: [key] }];
+    ticked.add("new");
+  }
+  hideFavPop();
+  const changed = JSON.stringify(next) !== JSON.stringify(getProjects());
+  if (!changed) return;
+  if (!(await saveProjects(next))) return;
+  const n = ticked.size;
+  showToast(n ? `Saved <strong>${escapeHtml(g.name)}</strong> to ${n} project${n === 1 ? "" : "s"}`
+              : `Removed <strong>${escapeHtml(g.name)}</strong> from your projects`, { ms: 3500 });
 }
 
 // ---------- Messages ("Deleted … Undo", errors) ----------
@@ -1500,6 +1741,8 @@ function setUser(user) {
   // Edit and delete appear or disappear on the open glaze when you log in or out
   if (changed && state.panel === "detail") openDetail(state.selectedId, { force: true });
   applySavedFavorites();
+  if (changed) { state.project = null; hideFavPop(); }
+  renderProjectsBar();
 }
 
 async function loadSession() {
@@ -1513,6 +1756,7 @@ async function loadSession() {
 
 document.addEventListener("keydown", (e) => {
   if (e.key !== "Escape" || authDialog.open) return;
+  if (!favPop.hidden) return hideFavPop();
   if (state.panel) closePanel();
 });
 
