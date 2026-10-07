@@ -582,6 +582,7 @@ panelEl.addEventListener("click", (e) => { if (e.target.closest("[data-close]"))
 
 function syncActions() {
   $("#uploadBtn").classList.toggle("is-current", state.panel === "upload");
+  renderProjectsBar(); // Edit / Delete project hide while the project panel is open
 }
 
 // ---------- Detail panel ----------
@@ -671,6 +672,7 @@ $("#uploadBtn").addEventListener("click", () => openUpload());
 // Opens the glaze form. With an id, it edits that glaze instead of adding a new one.
 function openUpload(editId) {
   if (!state.user) return openLogin(editId ? "Log in to edit glazes." : "Log in to upload a glaze.");
+  if (!editId && !canUpload()) return; // the button is hidden for other accounts; this covers any other way in
   const g = editId ? glazes.find((x) => x.id === editId) : null;
   state.selectedId = null;
   upload = {
@@ -1044,7 +1046,7 @@ function renderProjectsBar() {
       ${projects.map((p) => chip(p.id, p.name, p.glazes.filter(glazeByKey).length)).join("")}
       <button type="button" class="btn project-new" id="newProjectBtn">New project <span class="btn-icon" aria-hidden="true">+</span></button>
     </div>
-    ${current ? `<div class="project-tools">
+    ${current && state.panel !== "project" ? `<div class="project-tools">
       <button type="button" class="btn project-tool" data-project-edit>Edit project</button>
       <button type="button" class="btn project-tool" data-project-delete>Delete project</button>
     </div>` : ""}`;
@@ -1675,6 +1677,14 @@ function syncProfile() {
   profileBtn.setAttribute("aria-pressed", String(!!state.user));
   profileBtn.title = label;
   $("#profileLabel").textContent = label;
+  $("#uploadBtn").hidden = !canUpload();
+}
+
+// Only Westridge accounts (name@westridge.org) can add new glazes
+const UPLOAD_DOMAIN = "westridge.org";
+function canUpload() {
+  const email = (state.user && state.user.email) || "";
+  return email.toLowerCase().endsWith("@" + UPLOAD_DOMAIN);
 }
 
 function openLogin(note) {
@@ -1750,7 +1760,8 @@ function openAccount() {
     };
     $("#renameForm", view).addEventListener("submit", (e) => { e.preventDefault(); save(); });
     rename.addEventListener("blur", save);
-    $("#accountUpload", view).addEventListener("click", openUpload);
+    $("#accountUpload", view).addEventListener("click", () => openUpload());
+    $("#accountUpload", view).hidden = !canUpload();
     $("#logoutBtn", view).addEventListener("click", async () => {
       await db.auth.signOut();
       setUser(null);
@@ -1772,6 +1783,7 @@ function setUser(user) {
   if (changed && state.panel === "detail") openDetail(state.selectedId, { force: true });
   applySavedFavorites();
   if (changed) { state.project = null; hideFavPop(); }
+  if (changed && state.panel === "upload" && !upload?.editId && !canUpload()) closePanel();
   renderProjectsBar();
 }
 
