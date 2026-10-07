@@ -552,7 +552,8 @@ button.tag:hover, .tag.removable:hover { background: var(--green); }
 .project-chip:hover, .project-chip[aria-pressed="true"] { background: var(--green); }
 .project-chip-count { font-size: 11px; color: var(--muted); }
 .project-new { height: 34px; font-size: 13px; padding: 0 16px; }
-.project-tools { display: flex; gap: 12px; }
+.project-tools { display: flex; gap: 10px; }
+.project-tool { height: 34px; font-size: 13px; padding: 0 16px; }
 
 /* Glaze checklist (project panel and the pop-up) */
 .project-pick-head { display: flex; align-items: baseline; justify-content: space-between; margin: 16px 0 6px; }

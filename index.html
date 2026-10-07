@@ -268,6 +268,18 @@
     <button class="toast-close" id="toastClose" title="Dismiss"><span aria-hidden="true">×</span><span class="visually-hidden">Dismiss</span></button>
   </div>
 
+  <!-- "Are you sure?" before deleting a project -->
+  <dialog class="confirm" id="confirmDialog" aria-labelledby="confirmTitle">
+    <form method="dialog">
+      <h2 id="confirmTitle"></h2>
+      <p id="confirmText"></p>
+      <div class="confirm-actions">
+        <button class="btn" value="cancel" id="confirmCancel">Cancel</button>
+        <button class="btn" value="ok" id="confirmOk"></button>
+      </div>
+    </form>
+  </dialog>
+
   <!-- Password check before editing or deleting a glaze -->
   <dialog class="confirm" id="authDialog" aria-labelledby="authTitle">
     <form id="authForm" novalidate>
@@ -288,11 +300,11 @@
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=20261010b"></script>
-  <script src="supabase/functions/_shared/glaze-parse.js?v=20261010b"></script>
-  <script src="js/glaze-lookup.js?v=20261010b"></script>
-  <script src="js/mock-data.js?v=20261010b"></script>
-  <script src="js/glaze-store.js?v=20261010b"></script>
-  <script src="js/app.js?v=20261010b"></script>
+  <script src="config.js?v=20261010c"></script>
+  <script src="supabase/functions/_shared/glaze-parse.js?v=20261010c"></script>
+  <script src="js/glaze-lookup.js?v=20261010c"></script>
+  <script src="js/mock-data.js?v=20261010c"></script>
+  <script src="js/glaze-store.js?v=20261010c"></script>
+  <script src="js/app.js?v=20261010c"></script>
 </body>
 </html>

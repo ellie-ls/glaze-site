@@ -1045,8 +1045,8 @@ function renderProjectsBar() {
       <button type="button" class="btn project-new" id="newProjectBtn">New project <span class="btn-icon" aria-hidden="true">+</span></button>
     </div>
     ${current ? `<div class="project-tools">
-      <button type="button" class="link-btn" data-project-edit>Edit project</button>
-      <button type="button" class="link-btn" data-project-delete>Delete project</button>
+      <button type="button" class="btn project-tool" data-project-edit>Edit project</button>
+      <button type="button" class="btn project-tool" data-project-delete>Delete project</button>
     </div>` : ""}`;
   bar.hidden = false;
 }
@@ -1069,6 +1069,15 @@ async function deleteProject(id) {
   const index = projects.findIndex((p) => p.id === id);
   if (index < 0) return;
   const project = projects[index];
+  const n = project.glazes.filter(glazeByKey).length;
+  const sure = await askConfirm({
+    title: "Are you sure?",
+    text: `This deletes the project <strong>${escapeHtml(project.name)}</strong>. ` +
+      `The ${n} glaze${n === 1 ? "" : "s"} in it stay in your favorites.`,
+    confirm: "Delete project",
+    danger: true,
+  });
+  if (!sure) return;
   if (state.panel === "project") closePanel();
   if (!(await saveProjects(projects.filter((p) => p.id !== id)))) return;
   showToast(`Deleted project <strong>${escapeHtml(project.name)}</strong>`, {
@@ -1081,6 +1090,27 @@ async function deleteProject(id) {
     },
   });
 }
+
+// A plain yes/no question in a pop-up. Resolves true for the confirm button.
+function askConfirm({ title, text, confirm, danger = false }) {
+  const dialog = $("#confirmDialog");
+  $("#confirmTitle").textContent = title;
+  $("#confirmText").innerHTML = text;
+  const ok = $("#confirmOk");
+  ok.textContent = confirm;
+  ok.classList.toggle("btn-danger", danger);
+  ok.classList.toggle("btn-solid", !danger);
+  dialog.returnValue = "";
+  dialog.showModal();
+  $("#confirmCancel").focus(); // the safe choice is the default
+  return new Promise((resolve) => {
+    dialog.addEventListener("close", () => resolve(dialog.returnValue === "ok"), { once: true });
+  });
+}
+// Clicking the dimmed area outside counts as Cancel
+$("#confirmDialog").addEventListener("click", (e) => {
+  if (e.target === e.currentTarget) e.currentTarget.close("cancel");
+});
 
 // ---- New / edit project in the side panel ----
 function openProject(id) {
@@ -1755,7 +1785,7 @@ async function loadSession() {
 // ---------- Keyboard ----------
 
 document.addEventListener("keydown", (e) => {
-  if (e.key !== "Escape" || authDialog.open) return;
+  if (e.key !== "Escape" || authDialog.open || $("#confirmDialog").open) return;
   if (!favPop.hidden) return hideFavPop();
   if (state.panel) closePanel();
 });
